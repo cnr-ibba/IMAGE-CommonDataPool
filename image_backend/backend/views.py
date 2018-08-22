@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from rest_framework import generics
 
-# Create your views here.
+from .models import SampleInfo
+from .serializers import SampleInfoSerializer
+
+
+class ListSamplesView(generics.ListAPIView):
+    queryset = SampleInfo.objects.all()
+    serializer_class = SampleInfoSerializer
