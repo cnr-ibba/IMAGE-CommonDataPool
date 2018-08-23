@@ -1,7 +1,12 @@
 from rest_framework import generics
 
-from .models import SampleInfo
-from .serializers import SampleInfoSerializer
+from .models import SampleInfo, ExperimentInfo
+from .serializers import SampleInfoSerializer, ExperimentInfoSerializer
+
+
+class ListExperimentsView(generics.ListAPIView):
+    queryset = ExperimentInfo.objects.all()
+    serializer_class = ExperimentInfoSerializer
 
 
 class ListSamplesView(generics.ListAPIView):
