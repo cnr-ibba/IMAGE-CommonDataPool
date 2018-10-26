@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import SampleInfo, AnimalInfo, SampleDataInfo
 
-# Register your models here.
+admin.site.register(SampleInfo)
+admin.site.register(AnimalInfo)
+admin.site.register(SampleDataInfo)
