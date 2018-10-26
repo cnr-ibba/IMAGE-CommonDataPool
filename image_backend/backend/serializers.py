@@ -3,21 +3,23 @@ from rest_framework import serializers
 from .models import SampleInfo, AnimalInfo, SampleDataInfo
 
 
+class SampleDataInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SampleDataInfo
+        fields = ('organism_part', 'collection_date')
+
+
 class SampleInfoSerializer(serializers.ModelSerializer):
+    specimens = SampleDataInfoSerializer(many=True, read_only=True)
+
     class Meta:
         model = SampleInfo
-        fields = "__all__"
+        fields = ('data_source_id', 'alternative_id', 'specimens')
 
 
 class AnimalInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnimalInfo
-        fields = "__all__"
-
-
-class SampleDataInfoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SampleDataInfo
         fields = "__all__"
 
 

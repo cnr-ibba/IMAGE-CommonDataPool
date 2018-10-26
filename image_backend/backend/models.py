@@ -168,15 +168,15 @@ class SampleInfo(models.Model):
     submission_title = models.TextField()
     material = models.CharField(max_length=100, choices=MATERIAL)
     person_last_name = models.CharField(max_length=100)
-    person_email = models.EmailField()
-    person_affiliation = models.TextField()
-    person_role = models.TextField()
-    organization_name = models.TextField()
-    organization_role = models.TextField()  # todo
-    gene_bank_name = models.TextField()
+    person_email = models.EmailField()  # todo check that it is mandatory
+    person_affiliation = models.TextField()  # todo use CharField instead
+    person_role = models.TextField()  # todo use CharField instead
+    organization_name = models.TextField()  # todo use CharField instead
+    organization_role = models.TextField()  # todo use CharField instead
+    gene_bank_name = models.TextField()  # todo use CharField instead
     gene_bank_country = models.CharField(max_length=100, choices=COUNTRIES)
     data_source_type = models.CharField(max_length=100, choices=DATA_SOURCE_TYPE)
-    data_source_version = models.CharField(max_length=100)
+    data_source_version = models.CharField(max_length=100)  # todo check that it is mandatory
     species = models.CharField(max_length=100)
 
     # optional
@@ -187,12 +187,12 @@ class SampleInfo(models.Model):
     description = models.TextField(blank=True)
     person_initial = models.TextField(blank=True)
     organization_uri = models.TextField(blank=True)
-    publication_doi = models.CharField(max_length=100)
+    publication_doi = models.CharField(max_length=100, blank=True)
 
 
 class AnimalInfo(models.Model):
     # mandatory
-    sample = models.OneToOneField(SampleInfo, on_delete=models.CASCADE)
+    sample = models.OneToOneField(SampleInfo, related_name="organisms", on_delete=models.CASCADE)
     supplied_breed = models.TextField()
     efabis_breed_country = models.CharField(max_length=100, choices=COUNTRIES)
     sex = models.CharField(max_length=100)
@@ -208,11 +208,11 @@ class AnimalInfo(models.Model):
 
 class SampleDataInfo(models.Model):
     # mandatory
-    sample = models.OneToOneField(SampleInfo, on_delete=models.CASCADE)
+    sample = models.ForeignKey(SampleInfo, related_name="specimens", on_delete=models.CASCADE)
     derived_from = models.CharField(max_length=100)
     collection_date = models.DateField()
-    collection_place = models.TextField()
-    collection_place_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)
+    collection_place = models.TextField()  # todo check that it is mandatory
+    collection_place_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)  # todo check that it is mandatory
     organism_part = models.CharField(max_length=100)
 
     # optional
