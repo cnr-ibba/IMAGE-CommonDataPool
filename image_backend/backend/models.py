@@ -165,15 +165,15 @@ class SampleInfo(models.Model):
     data_source_id = models.CharField(max_length=100, primary_key=True)
     alternative_id = models.CharField(max_length=100)
     project = models.CharField(max_length=100, choices=PROJECT_TYPES)
-    submission_title = models.TextField()
+    submission_title = models.CharField(max_length=100)
     material = models.CharField(max_length=100, choices=MATERIAL)
     person_last_name = models.CharField(max_length=100)
     person_email = models.EmailField()  # todo check that it is mandatory
-    person_affiliation = models.TextField()  # todo use CharField instead
-    person_role = models.TextField()  # todo use CharField instead
-    organization_name = models.TextField()  # todo use CharField instead
-    organization_role = models.TextField()  # todo use CharField instead
-    gene_bank_name = models.TextField()  # todo use CharField instead
+    person_affiliation = models.CharField(max_length=100)
+    person_role = models.CharField(max_length=100)
+    organization_name = models.CharField(max_length=100)
+    organization_role = models.CharField(max_length=100)
+    gene_bank_name = models.CharField(max_length=100)
     gene_bank_country = models.CharField(max_length=100, choices=COUNTRIES)
     data_source_type = models.CharField(max_length=100, choices=DATA_SOURCE_TYPE)
     data_source_version = models.CharField(max_length=100)  # todo check that it is mandatory
@@ -192,17 +192,17 @@ class SampleInfo(models.Model):
 
 class AnimalInfo(models.Model):
     # mandatory
-    sample = models.OneToOneField(SampleInfo, related_name="organisms", on_delete=models.CASCADE)
-    supplied_breed = models.TextField()
+    sample = models.ForeignKey(SampleInfo, related_name="organisms", on_delete=models.CASCADE)
+    supplied_breed = models.CharField(max_length=100)
     efabis_breed_country = models.CharField(max_length=100, choices=COUNTRIES)
     sex = models.CharField(max_length=100)
-    birth_location_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)
+    birth_location_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)  # todo check that it is mandatory
 
     # optional
     mapped_breed = models.CharField(max_length=100, blank=True)
     birth_location = models.TextField(blank=True)
-    birth_location_longitude = models.DecimalField(decimal_places=2, max_digits=10, null=True)
-    birth_location_latitude = models.DecimalField(decimal_places=2, max_digits=10, null=True)
+    birth_location_longitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
+    birth_location_latitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
     child_of = models.CharField(max_length=100, blank=True)
 
 
@@ -211,21 +211,21 @@ class SampleDataInfo(models.Model):
     sample = models.ForeignKey(SampleInfo, related_name="specimens", on_delete=models.CASCADE)
     derived_from = models.CharField(max_length=100)
     collection_date = models.DateField()
-    collection_place = models.TextField()  # todo check that it is mandatory
+    collection_place = models.CharField(max_length=100)  # todo check that it is mandatory
     collection_place_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)  # todo check that it is mandatory
     organism_part = models.CharField(max_length=100)
 
     # optional
     specimen_collection_protocol = models.CharField(max_length=100, blank=True)
-    collection_place_latitude = models.DecimalField(decimal_places=2, max_digits=10, null=True)
-    collection_place_longitude = models.DecimalField(decimal_places=2, max_digits=10, null=True)
+    collection_place_latitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
+    collection_place_longitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
     developmental_stage = models.CharField(max_length=100, blank=True)
     physiological_stage = models.CharField(max_length=100, blank=True)
     availability = models.TextField(blank=True)
     sample_storage = models.CharField(max_length=100, choices=SAMPLE_STORAGE, blank=True)
     sample_storage_processing = models.CharField(max_length=100, choices=SAMPLE_STORAGE_PROCESSING, blank=True)
-    animal_age_at_collection = models.IntegerField(null=True)
-    sampling_to_preparation_interval = models.IntegerField(null=True)
+    animal_age_at_collection = models.IntegerField(blank=True)
+    sampling_to_preparation_interval = models.IntegerField(blank=True)
 
 
 class ExperimentInfo(models.Model):
