@@ -4,6 +4,6 @@ from . import views
 
 app_name = 'polls'
 urlpatterns = [
-    # path('experiment/', views.ListExperimentsView.as_view(), name='experimentindex'),
-    path('sample/', views.ListSamplesView.as_view(), name='sampleindex')
+    path('organism/', views.ListOrganismsView.as_view(), name='organismindex'),
+    path('specimen/', views.ListSpecimensView.as_view(), name='specimenindex')
 ]
