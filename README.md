@@ -3,9 +3,6 @@ IMAGE Common Data Pool - PostgreSQL, metadata structure and data loading scripts
 
 # Runing app
 
-Create superuser:
-
-```docker-compose run web ./manage.py createsuperuser --email admin@example.com --username superuser```
 
 Create migrations:
 
@@ -19,9 +16,13 @@ Run app:
 
 ```docker-compose up```
 
+Create superuser:
+
+```docker-compose run web ./manage.py createsuperuser --email {your email} --username admin```
+
 Upload test data:
 
-```python ./import_test_data.py```
+```python ./import_test_data.py {admin password}```
 
 Stop app:
 

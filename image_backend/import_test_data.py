@@ -1,14 +1,15 @@
 import json
 import requests
+import sys
 
 
 def import_data():
     organisms_data = read_data('organisms')
     specimens_data = read_data('specimens')
     for organism in organisms_data:
-        requests.post('http://localhost:8000/backend/organism/', json=organism)
+        requests.post('http://localhost:8000/backend/organism/', json=organism, auth=('admin', sys.argv[1]))
     for specimen in specimens_data:
-        requests.post('http://localhost:8000/backend/specimen/', json=specimen)
+        requests.post('http://localhost:8000/backend/specimen/', json=specimen, auth=('admin', sys.argv[1]))
 
 
 def read_data(file_type):
