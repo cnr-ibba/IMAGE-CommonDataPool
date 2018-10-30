@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import status
 
@@ -8,6 +8,7 @@ from .serializers import SpecimensSerializer, OrganismsSerializer
 
 class ListCreateSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
         return SampleInfo.objects.filter(specimens__isnull=False)
@@ -39,6 +40,7 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
 
 class ListCreateOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
