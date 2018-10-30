@@ -6,11 +6,18 @@ from .models import SampleInfo
 from .serializers import SpecimensSerializer, OrganismsSerializer
 
 
-class ListSpecimensView(generics.ListAPIView):
+class ListCreateSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
 
     def get_queryset(self):
         return SampleInfo.objects.filter(specimens__isnull=False)
+
+    def post(self, request, *args, **kwargs):
+        serializer = SpecimensSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=ValueError):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SpecimensDetailsView(generics.RetrieveAPIView):
@@ -30,11 +37,18 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
             )
 
 
-class ListOrganismsView(generics.ListAPIView):
+class ListCreateOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
+
+    def post(self, request, *args, **kwargs):
+        serializer = OrganismsSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=ValueError):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
 
 class OrganismsDetailsView(generics.RetrieveAPIView):
