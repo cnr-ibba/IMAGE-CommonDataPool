@@ -217,8 +217,8 @@ class SampleDataInfo(models.Model):
 
     # optional
     specimen_collection_protocol = models.CharField(max_length=100, blank=True)
-    collection_place_latitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
-    collection_place_longitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
+    collection_place_latitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True, null=True)
+    collection_place_longitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True, null=True)
     developmental_stage = models.CharField(max_length=100, blank=True)
     physiological_stage = models.CharField(max_length=100, blank=True)
     availability = models.TextField(blank=True)
