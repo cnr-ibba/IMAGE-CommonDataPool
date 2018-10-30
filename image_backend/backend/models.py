@@ -201,8 +201,8 @@ class AnimalInfo(models.Model):
     # optional
     mapped_breed = models.CharField(max_length=100, blank=True)
     birth_location = models.TextField(blank=True)
-    birth_location_longitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
-    birth_location_latitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True)
+    birth_location_longitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True, null=True)
+    birth_location_latitude = models.DecimalField(decimal_places=2, max_digits=10, blank=True, null=True)
     child_of = models.CharField(max_length=100, blank=True)
 
 
@@ -224,8 +224,8 @@ class SampleDataInfo(models.Model):
     availability = models.TextField(blank=True)
     sample_storage = models.CharField(max_length=100, choices=SAMPLE_STORAGE, blank=True)
     sample_storage_processing = models.CharField(max_length=100, choices=SAMPLE_STORAGE_PROCESSING, blank=True)
-    animal_age_at_collection = models.IntegerField(blank=True)
-    sampling_to_preparation_interval = models.IntegerField(blank=True)
+    animal_age_at_collection = models.IntegerField(blank=True, null=True)
+    sampling_to_preparation_interval = models.IntegerField(blank=True, null=True)
 
 
 class ExperimentInfo(models.Model):
