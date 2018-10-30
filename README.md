@@ -14,6 +14,10 @@ Run app:
 
 ```docker-compose up```
 
+Upload test data:
+
+```python ./import_test_data.py```
+
 Stop app:
 
 ```docker-compose down```

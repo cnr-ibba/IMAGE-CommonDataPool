@@ -6,11 +6,9 @@ def import_data():
     organisms_data = read_data('organisms')
     specimens_data = read_data('specimens')
     for organism in organisms_data:
-        r = requests.post('http://localhost:8000/backend/organism/', json=organism)
-        print(r.json()['data_source_id'])
+        requests.post('http://localhost:8000/backend/organism/', json=organism)
     for specimen in specimens_data:
-        r = requests.post('http://localhost:8000/backend/specimen/', json=specimen)
-        print(r.json())
+        requests.post('http://localhost:8000/backend/specimen/', json=specimen)
 
 
 def read_data(file_type):
