@@ -17,11 +17,12 @@ services:
   nginx:
     image: nginx:1.13
     ports:
-      - 8000:80
+      - 80:80
     volumes:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
       - static_volume:/code/static  # <-- bind the static volume
       - media_volume:/code/media  # <-- bind the media volume
+      - ./IMAGE-frontend:/usr/share/nginx/html
     depends_on:
       - djangoapp
     networks:
