@@ -7,9 +7,9 @@ def import_data():
     organisms_data = read_data('organisms')
     specimens_data = read_data('specimens')
     for organism in organisms_data:
-        requests.post('http://localhost:8000/api/backend/organism/', json=organism, auth=('admin', sys.argv[1]))
+        requests.post('http://localhost:26081/data_portal/backend/organism/', json=organism, auth=('admin', sys.argv[1]))
     for specimen in specimens_data:
-        requests.post('http://localhost:8000/api/backend/specimen/', json=specimen, auth=('admin', sys.argv[1]))
+        requests.post('http://localhost:26081/data_portal/backend/specimen/', json=specimen, auth=('admin', sys.argv[1]))
 
 
 def read_data(file_type):
