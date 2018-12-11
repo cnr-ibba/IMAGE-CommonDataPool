@@ -17,7 +17,7 @@ services:
   nginx:
     image: nginx:1.13
     ports:
-      - 80:80
+      - 26081:80
     volumes:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
       - static_volume:/code/static  # <-- bind the static volume
