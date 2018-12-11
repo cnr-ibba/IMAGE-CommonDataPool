@@ -22,7 +22,6 @@ services:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
       - static_volume:/code/static  # <-- bind the static volume
       - media_volume:/code/media  # <-- bind the media volume
-      - ./IMAGE-frontend:/usr/share/nginx/html
     depends_on:
       - djangoapp
     networks:
