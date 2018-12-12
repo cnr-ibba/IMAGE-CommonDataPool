@@ -4,21 +4,23 @@ IMAGE Common Data Pool - PostgreSQL, metadata structure and data loading scripts
 # Runing app
 
 
-Create migrations:
+Make migrations:
 
-```docker-compose run web ./manage.py makemigrations```
+```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py check"```
 
-Apply migrations:
+```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py migrate"```
 
- ```docker-compose run web ./manage.py migrate```
- 
-Run app:
+```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py makemigrations"```
 
-```docker-compose up```
+```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py migrate"```
 
 Create superuser:
 
-```docker-compose run web ./manage.py createsuperuser --email {your email} --username admin```
+```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py createsuperuser --email {your email} --username admin"```
+
+Start app:
+
+```sudo docker-compose up -d```
 
 Upload test data:
 
