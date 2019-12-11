@@ -182,7 +182,6 @@ class SampleInfo(models.Model):
 
     # optional
     description = models.TextField(blank=True)
-    description = models.TextField(blank=True)
     person_initial = ArrayField(models.CharField(max_length=100, blank=True))
     organization_uri = ArrayField(models.TextField(blank=True))
     publication_doi = models.CharField(max_length=100, blank=True)
