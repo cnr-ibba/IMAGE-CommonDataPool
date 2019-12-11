@@ -59,12 +59,22 @@ DATA_SOURCE_TYPE = (
     ('Template', 'Template')
 )
 
+DATE_UNITS = (
+    ('YYYY-MM-DD', 'YYYY-MM-DD'),
+    ('YYYY-MM', 'YYYY-MM'),
+    ('YYYY', 'YYYY')
+)
+
+LOCATION_UNITS = (
+    ('decimal degrees', 'decimal degrees')
+)
+
 LOCATION_ACCURACY = (
     ('missing geographic information', 'missing geographic information'),
     ('country level', 'country level'),
     ('region level', 'region level'),
-    ('subregion level', 'subregion level'),
     ('precise coordinates', 'precise coordinates'),
+    ('unknown accuracy level', 'unknown accuracy level')
 )
 
 SAMPLE_STORAGE = (
@@ -189,18 +199,37 @@ class SampleInfo(models.Model):
 
 class AnimalInfo(models.Model):
     # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="organisms", on_delete=models.CASCADE)
+    sample = models.ForeignKey(SampleInfo, related_name="organisms",
+                               on_delete=models.CASCADE)
     supplied_breed = models.CharField(max_length=100)
-    efabis_breed_country = models.CharField(max_length=100, choices=COUNTRIES)
+    efabis_breed_country = models.CharField(max_length=100)
     sex = models.CharField(max_length=100)
-    birth_location_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)  # todo check that it is mandatory
+    sex_ontology = models.CharField(max_length=100)
+    birth_location_accuracy = models.CharField(max_length=100,
+                                               choices=LOCATION_ACCURACY)
+
+    # recommended
+    mapped_breed = models.CharField(max_length=100, blank=True)
+    mapped_breed_ontology = models.CharField(max_length=100, blank=True)
+    birth_date = models.CharField(max_length=100, blank=True)
+    birth_date_unit = models.CharField(max_length=100, blank=True,
+                                       choices=DATE_UNITS)
+    birth_location = models.CharField(max_length=100, blank=True)
+    birth_location_longitude = models.DecimalField(decimal_places=10,
+                                                   max_digits=20, blank=True,
+                                                   null=True)
+    birth_location_longitude_unit = models.CharField(max_length=100,
+                                                     blank=True,
+                                                     choices=LOCATION_UNITS)
+    birth_location_latitude = models.DecimalField(decimal_places=10,
+                                                  max_digits=20, blank=True,
+                                                  null=True)
+    birth_location_latitude_unit = models.CharField(max_length=100,
+                                                    blank=True,
+                                                    choices=LOCATION_UNITS)
 
     # optional
-    mapped_breed = models.CharField(max_length=100, blank=True)
-    birth_location = models.TextField(blank=True)
-    birth_location_longitude = models.DecimalField(decimal_places=10, max_digits=20, blank=True, null=True)
-    birth_location_latitude = models.DecimalField(decimal_places=10, max_digits=20, blank=True, null=True)
-    child_of = models.CharField(max_length=100, blank=True)
+    child_of = ArrayField(models.CharField(max_length=100, blank=True), size=2)
 
 
 class SampleDataInfo(models.Model):
