@@ -77,11 +77,30 @@ LOCATION_ACCURACY = (
     ('unknown accuracy level', 'unknown accuracy level')
 )
 
+AGE_UNITS = (
+    ('minutes', 'minutes'),
+    ('hours', 'hours'),
+    ('month', 'month'),
+    ('year', 'year'),
+    ('days', 'days'),
+    ('weeks', 'weeks'),
+    ('months', 'months'),
+    ('years', 'years'),
+    ('minute', 'minute'),
+    ('hour', 'hour'),
+    ('day', 'day'),
+    ('week', 'week')
+)
+
 SAMPLE_STORAGE = (
     ('ambient temperature', 'ambient temperature'),
     ('cut slide', 'cut slide'),
-    ('frozen, -80 degrees Celsius freezer', 'frozen, -80 degrees Celsius freezer'),
-    ('frozen, -20 degrees Celsius freezer', 'frozen, -20 degrees Celsius freezer'),
+    ('frozen, -80 degrees Celsius freezer',
+     'frozen, -80 degrees Celsius freezer'),
+    ('frozen, -40 degrees Celsius freezer',
+     'frozen, -40 degrees Celsius freezer'),
+    ('frozen, -20 degrees Celsius freezer',
+     'frozen, -20 degrees Celsius freezer'),
     ('frozen, liquid nitrogen', 'frozen, liquid nitrogen'),
     ('frozen, vapor phase', 'frozen, vapor phase'),
     ('paraffin block', 'paraffin block'),
@@ -93,14 +112,19 @@ SAMPLE_STORAGE = (
 )
 
 SAMPLE_STORAGE_PROCESSING = (
-    ('cryopreservation in liquid nitrogen (dead tissue)', 'cryopreservation in liquid nitrogen (dead tissue)'),
-    ('cryopreservation in dry ice (dead tissue)', 'cryopreservation in dry ice (dead tissue)'),
-    ('cryopreservation of live cells in liquid nitrogen', 'cryopreservation of live cells in liquid nitrogen'),
+    ('cryopreservation in liquid nitrogen (dead tissue)',
+     'cryopreservation in liquid nitrogen (dead tissue)'),
+    ('cryopreservation in dry ice (dead tissue)',
+     'cryopreservation in dry ice (dead tissue)'),
+    ('cryopreservation of live cells in liquid nitrogen',
+     'cryopreservation of live cells in liquid nitrogen'),
     ('cryopreservation, other', 'cryopreservation, other'),
     ('formalin fixed, unbuffered', 'formalin fixed, unbuffered'),
     ('formalin fixed, buffered', 'formalin fixed, buffered'),
-    ('formalin fixed and paraffin embedded', 'formalin fixed and paraffin embedded'),
-    ('freeze dried (vaiable for reproduction)', 'freeze dried (vaiable for reproduction)'),
+    ('formalin fixed and paraffin embedded',
+     'formalin fixed and paraffin embedded'),
+    ('freeze dried (vaiable for reproduction)',
+     'freeze dried (vaiable for reproduction)'),
     ('freeze dried', 'freeze dried')
 )
 
@@ -234,24 +258,54 @@ class AnimalInfo(models.Model):
 
 class SampleDataInfo(models.Model):
     # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="specimens", on_delete=models.CASCADE)
+    sample = models.ForeignKey(SampleInfo, related_name="specimens",
+                               on_delete=models.CASCADE)
     derived_from = models.CharField(max_length=100)
-    collection_date = models.DateField()
-    collection_place = models.CharField(max_length=100)  # todo check that it is mandatory
-    collection_place_accuracy = models.CharField(max_length=100, choices=LOCATION_ACCURACY)  # todo check that it is mandatory
+    collection_place_accuracy = models.CharField(max_length=100,
+                                                 choices=LOCATION_ACCURACY)
     organism_part = models.CharField(max_length=100)
+    organism_part_ontology = models.CharField(max_length=100)
+
+    # recommended
+    specimen_collection_protocol = models.CharField(max_length=100, blank=True)
+    collection_date = models.DateField(blank=True)
+    collection_date_unit = models.CharField(max_length=100, blank=True,
+                                            choices=DATE_UNITS)
+    collection_place_latitude = models.DecimalField(decimal_places=10,
+                                                    max_digits=20, blank=True,
+                                                    null=True)
+    collection_place_latitude_unit = models.CharField(max_length=100,
+                                                      blank=True,
+                                                      choices=LOCATION_UNITS)
+    collection_place_longitude = models.DecimalField(decimal_places=10,
+                                                     max_digits=20, blank=True,
+                                                     null=True)
+    collection_place_longitude_unit = models.CharField(max_length=100,
+                                                       blank=True,
+                                                       choices=LOCATION_UNITS)
+    collection_place = models.CharField(max_length=100, blank=True)
+    developmental_stage = models.CharField(max_length=100, blank=True)
+    developmental_stage_ontology = models.CharField(max_length=100, blank=True)
+    physiological_stage = models.CharField(max_length=100, blank=True)
+    physiological_stage_ontology = models.CharField(max_length=100, blank=True)
+    availability = models.CharField(max_length=100, blank=True)
+    sample_storage = models.CharField(max_length=100, choices=SAMPLE_STORAGE,
+                                      blank=True)
+    sample_storage_processing = models.CharField(
+        max_length=100,
+        choices=SAMPLE_STORAGE_PROCESSING,
+        blank=True)
 
     # optional
-    specimen_collection_protocol = models.CharField(max_length=100, blank=True)
-    collection_place_latitude = models.DecimalField(decimal_places=10, max_digits=20, blank=True, null=True)
-    collection_place_longitude = models.DecimalField(decimal_places=10, max_digits=20, blank=True, null=True)
-    developmental_stage = models.CharField(max_length=100, blank=True)
-    physiological_stage = models.CharField(max_length=100, blank=True)
-    availability = models.TextField(blank=True)
-    sample_storage = models.CharField(max_length=100, choices=SAMPLE_STORAGE, blank=True)
-    sample_storage_processing = models.CharField(max_length=100, choices=SAMPLE_STORAGE_PROCESSING, blank=True)
     animal_age_at_collection = models.IntegerField(blank=True, null=True)
-    sampling_to_preparation_interval = models.IntegerField(blank=True, null=True)
+    animal_age_at_collection_unit = models.CharField(max_length=100,
+                                                     blank=True,
+                                                     choices=AGE_UNITS)
+    sampling_to_preparation_interval = models.IntegerField(blank=True,
+                                                           null=True)
+    sampling_to_preparation_interval_unit = models.CharField(max_length=100,
+                                                             blank=True,
+                                                             choices=AGE_UNITS)
 
 
 class ExperimentInfo(models.Model):
