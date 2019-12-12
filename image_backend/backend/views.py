@@ -18,7 +18,8 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.error_messages,
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class SpecimensDetailsView(generics.RetrieveAPIView):
@@ -32,7 +33,8 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
         except:
             return Response(
                 data={
-                    "message": "Organism with id: {} does not exist".format(kw['specimen_id'])
+                    "message": "Organism with id: {} does not exist".format(
+                        kw['specimen_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -50,7 +52,8 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.error_messages,
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class OrganismsDetailsView(generics.RetrieveAPIView):
@@ -64,7 +67,8 @@ class OrganismsDetailsView(generics.RetrieveAPIView):
         except:
             return Response(
                 data={
-                    "message": "Organism with id: {} does not exist".format(kw['organism_id'])
+                    "message": "Organism with id: {} does not exist".format(
+                        kw['organism_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
