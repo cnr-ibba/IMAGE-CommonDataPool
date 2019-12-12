@@ -66,7 +66,7 @@ DATE_UNITS = (
 )
 
 LOCATION_UNITS = (
-    ('decimal degrees', 'decimal degrees')
+    ('decimal degrees', 'decimal degrees'),
 )
 
 LOCATION_ACCURACY = (
