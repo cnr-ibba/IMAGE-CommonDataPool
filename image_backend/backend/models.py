@@ -104,7 +104,8 @@ SAMPLE_STORAGE = (
     ('frozen, liquid nitrogen', 'frozen, liquid nitrogen'),
     ('frozen, vapor phase', 'frozen, vapor phase'),
     ('paraffin block', 'paraffin block'),
-    ('RNAlater, frozen -20 degrees Celsius', 'RNAlater, frozen -20 degrees Celsius'),
+    ('RNAlater, frozen -20 degrees Celsius',
+     'RNAlater, frozen -20 degrees Celsius'),
     ('TRIzol, frozen', 'TRIzol, frozen'),
     ('paraffin block at ambient temperatures (+15 to +30 degrees Celsius)',
      'paraffin block at ambient temperatures (+15 to +30 degrees Celsius)'),
@@ -311,20 +312,26 @@ class SampleDataInfo(models.Model):
 class ExperimentInfo(models.Model):
     # mandatory
     data_source_id = models.ForeignKey(SampleInfo, on_delete=models.CASCADE)
-    experiment_type = models.CharField(max_length=100, choices=EXPERIMENT_TYPE_ONTOLOGY_ID)
-    experiment_target = models.CharField(max_length=100, choices=EXPERIMENT_TARGET_ONTOLOGY_ID)
+    experiment_type = models.CharField(max_length=100,
+                                       choices=EXPERIMENT_TYPE_ONTOLOGY_ID)
+    experiment_target = models.CharField(max_length=100,
+                                         choices=EXPERIMENT_TARGET_ONTOLOGY_ID)
 
     # optional
     extraction_protocol = models.CharField(max_length=100, blank=True)
     library_preparation_location = models.TextField(blank=True)
-    library_preparation_location_longitude = models.DecimalField(decimal_places=10, max_digits=20, null=True)
-    library_preparation_location_latitude = models.DecimalField(decimal_places=10, max_digits=20, null=True)
+    library_preparation_location_longitude = models.DecimalField(
+        decimal_places=10, max_digits=20, null=True)
+    library_preparation_location_latitude = models.DecimalField(
+        decimal_places=10, max_digits=20, null=True)
     library_preparation_date = models.DateField(null=True)
     sequencing_location = models.TextField(blank=True)
     sequencing_date = models.DateField(null=True)
     experimental_protocol = models.CharField(max_length=100, blank=True)
-    sequencing_location_longitude = models.DecimalField(decimal_places=10, max_digits=20, null=True)
-    sequencing_location_latitude = models.DecimalField(decimal_places=10, max_digits=20, null=True)
+    sequencing_location_longitude = models.DecimalField(
+        decimal_places=10, max_digits=20, null=True)
+    sequencing_location_latitude = models.DecimalField(
+        decimal_places=10, max_digits=20, null=True)
 
 
 class AtacSeqInfo(models.Model):
@@ -336,7 +343,8 @@ class AtacSeqInfo(models.Model):
 class BisulfiteSequencingInfo(models.Model):
     # mandatory
     sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    library_selection = models.CharField(max_length=100, choices=BS_LIBRARY_SELECTION)
+    library_selection = models.CharField(max_length=100,
+                                         choices=BS_LIBRARY_SELECTION)
     bisulfite_conversion_protocol = models.CharField(max_length=100)
     pcr_product_isolation_protocol = models.CharField(max_length=100)
     bisulfite_conversion_percentage = models.IntegerField()
@@ -379,27 +387,36 @@ class HiCInfo(models.Model):
 class RnaSeqInfo(models.Model):
     # mandatory
     sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    rna_preparation_3_adapter_ligation_protocol = models.CharField(max_length=100)
-    rna_preparation_5_adapter_ligation_protocol = models.CharField(max_length=100)
-    library_generation_pcr_product_isolation_protocol = models.CharField(max_length=100)
-    preparation_reverse_transcription_protocol = models.CharField(max_length=100)
+    rna_preparation_3_adapter_ligation_protocol = models.CharField(
+        max_length=100)
+    rna_preparation_5_adapter_ligation_protocol = models.CharField(
+        max_length=100)
+    library_generation_pcr_product_isolation_protocol = models.CharField(
+        max_length=100)
+    preparation_reverse_transcription_protocol = models.CharField(
+        max_length=100)
     library_generation_protocol = models.CharField(max_length=100)
     read_strand = models.CharField(max_length=100, choices=READ_STRAND)
 
     # optional
-    rna_purity_260_280_ratio = models.DecimalField(decimal_places=2, max_digits=10, null=True)
-    rna_purity_260_230_ratio = models.DecimalField(decimal_places=2, max_digits=10, null=True)
-    rna_integrity_number = models.DecimalField(decimal_places=2, max_digits=10, null=True)
+    rna_purity_260_280_ratio = models.DecimalField(decimal_places=2,
+                                                   max_digits=10, null=True)
+    rna_purity_260_230_ratio = models.DecimalField(decimal_places=2,
+                                                   max_digits=10, null=True)
+    rna_integrity_number = models.DecimalField(decimal_places=2,
+                                               max_digits=10, null=True)
 
 
 class WholeGenomeSequencingInfo(models.Model):
     # mandatory
     sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    library_generation_pcr_product_isolation_protocol = models.CharField(max_length=100)
+    library_generation_pcr_product_isolation_protocol = models.CharField(
+        max_length=100)
     library_generation_protocol = models.CharField(max_length=100)
 
     # optional
-    library_selection = models.CharField(max_length=100, choices=WGC_LIBRARY_SELCTION)
+    library_selection = models.CharField(max_length=100,
+                                         choices=WGC_LIBRARY_SELCTION)
 
 
 class GenotypingInfo(models.Model):
