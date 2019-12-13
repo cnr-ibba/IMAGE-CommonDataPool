@@ -15,45 +15,81 @@ def fetch_biosamples():
     results = requests.get('https://www.ebi.ac.uk/biosamples/samples'
                            '?size=1000&filter=attr:project:IMAGE').json()
     samples = results['_embedded']['samples']
-    results_to_return = list()
+    organisms = list()
+    specimens = list()
     for sample in samples:
-        tmp = dict()
-        for field_name in standard_rules['mandatory']:
-            if field_name in sample['characteristics']:
-                biosample_name = field_name
-            elif field_name.lower() in sample['characteristics']:
-                biosample_name = field_name.lower()
-            else:
-                print(f"Error: can't find this field {field_name} in sample")
-                return
-            cdp_name = convert_to_underscores(field_name)
-            allow_multiple = field_name in standard_rules['allow_multiple']
+        tmp = parse_biosample(sample, standard_rules)
+        tmp['data_source_id'] = sample['accession']
+        if tmp['material'] == 'organism':
+            tmp['organisms'] = [parse_biosample(sample, organism_rules)]
+            if 'relationships' in sample:
+                relationships = list()
+                for relationship in sample['relationships']:
+                    if relationship['type'] == 'child of':
+                        relationships.append(relationship['target'])
+                tmp['organisms'][0]['child_of'] = relationships
+            organisms.append(tmp)
+        else:
+            tmp['specimens'] = [parse_biosample(sample, specimen_rules)]
+            if 'relationships' in sample:
+                for relationship in sample['relationships']:
+                    if relationship['type'] == 'derived from':
+                        tmp['specimens'][0]['derived_from'] = \
+                            relationship['target']
+            specimens.append(tmp)
+    return organisms, specimens
 
-            # Should fetch 'text' field only
-            if field_name not in standard_rules['with_ontology'] and \
-                    field_name not in standard_rules['with_units']:
-                tmp[cdp_name] = get_text_unit_field(sample, biosample_name,
+
+def parse_biosample(sample, rules):
+    """
+    This function will parse biosample record using rules
+    :param sample: biosample record
+    :param rules: rules for this record
+    :return: dict of parsed values
+    """
+    results = dict()
+    for field_name in rules['mandatory']:
+        if field_name in sample['characteristics']:
+            biosample_name = field_name
+        elif field_name.lower() in sample['characteristics']:
+            biosample_name = field_name.lower()
+        else:
+            print(f"Error: can't find this field {field_name} in sample")
+            return
+        cdp_name = convert_to_underscores(field_name)
+        allow_multiple = field_name in rules['allow_multiple']
+
+        # Should fetch 'text' field only
+        if field_name not in rules['with_ontology'] and \
+                field_name not in rules['with_units']:
+            results[cdp_name] = get_text_unit_field(sample, biosample_name,
                                                     'text', allow_multiple)
 
-            # Should fetch 'text' and 'ontology' fields
-            if field_name in standard_rules['with_ontology']:
-                tmp[cdp_name] = get_text_unit_field(
-                    sample, biosample_name, 'text', allow_multiple)
-                tmp[f"{cdp_name}_ontology"] = get_ontology_field(
-                    sample, biosample_name, allow_multiple)
+        # Should fetch 'text' and 'ontology' fields
+        if field_name in rules['with_ontology']:
+            results[cdp_name] = get_text_unit_field(
+                sample, biosample_name, 'text', allow_multiple)
+            results[f"{cdp_name}_ontology"] = get_ontology_field(
+                sample, biosample_name, allow_multiple)
 
-            # Should fetch 'text' and 'unit' fields
-            if field_name in standard_rules['with_units']:
-                tmp[cdp_name] = get_text_unit_field(
-                    sample, biosample_name, 'text', allow_multiple)
-                tmp[f"{cdp_name}_unit"] = get_text_unit_field(
-                    sample, biosample_name, 'unit', allow_multiple)
-
-        results_to_return.append(tmp)
-    return results_to_return
+        # Should fetch 'text' and 'unit' fields
+        if field_name in rules['with_units']:
+            results[cdp_name] = get_text_unit_field(
+                sample, biosample_name, 'text', allow_multiple)
+            results[f"{cdp_name}_unit"] = get_text_unit_field(
+                sample, biosample_name, 'unit', allow_multiple)
+    return results
 
 
 def get_text_unit_field(sample, biosample_name, field_to_fetch, is_list=False):
+    """
+    This function will parse text and unit fields in biosamples
+    :param sample: sample to parse
+    :param biosample_name: name to use in biosample record
+    :param field_to_fetch: text or unit to use
+    :param is_list: does this record allow to use multiple values
+    :return: parsed biosample record
+    """
     if is_list:
         tmp = list()
         for item in sample['characteristics'][biosample_name]:
@@ -64,6 +100,13 @@ def get_text_unit_field(sample, biosample_name, field_to_fetch, is_list=False):
 
 
 def get_ontology_field(sample, biosample_name, is_list=False):
+    """
+    This function will parse ontology field in biosamples
+    :param sample: sample to parse
+    :param biosample_name: name to use in biosample record
+    :param is_list: does this record allow to use multiple values
+    :return: parsed biosample record
+    """
     if is_list:
         tmp = list()
         for item in sample['characteristics'][biosample_name]:
@@ -129,4 +172,8 @@ def convert_to_underscores(name):
 
 
 if __name__ == "__main__":
-    print(fetch_biosamples()[0])
+    organisms, specimens = fetch_biosamples()
+    with open('organisms.json', 'w') as outfile:
+        json.dump(organisms, outfile)
+    with open('specimens.json', 'w') as outfile:
+        json.dump(specimens, outfile)

@@ -17,9 +17,9 @@ def import_data():
 def read_data(file_type):
     file_name = ''
     if file_type == 'organisms':
-        file_name = 'organisms.test_data.json'
+        file_name = 'organisms.json'
     elif file_type == 'specimens':
-        file_name = 'specimens.test_data.json'
+        file_name = 'specimens.json'
     with open(file_name, 'r') as f:
         data = json.load(f)
     return data
