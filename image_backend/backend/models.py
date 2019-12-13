@@ -1,5 +1,5 @@
 from django.db import models
-from django_postgres_extensions.models.fields import ArrayField
+from django.contrib.postgres.fields import ArrayField
 
 PROJECT_TYPES = (
     ('IMAGE', 'IMAGE'),
@@ -186,7 +186,7 @@ class SampleInfo(models.Model):
     material = models.CharField(max_length=100, choices=MATERIAL)
     material_ontology = models.CharField(max_length=100,
                                          choices=MATERIAL_ONTOLOGY)
-    person_lat_name = ArrayField(models.CharField(max_length=100))
+    person_last_name = ArrayField(models.CharField(max_length=100))
     person_email = ArrayField(models.EmailField())
     person_affiliation = ArrayField(models.CharField(max_length=100))
     person_role = ArrayField(models.CharField(max_length=100))
@@ -206,19 +206,21 @@ class SampleInfo(models.Model):
 
     # recommended
     submission_description = models.TextField(blank=True)
-    person_first_name = ArrayField(models.CharField(max_length=100, blank=True))
-    organization_address = ArrayField(models.TextField(blank=True))
+    person_first_name = ArrayField(models.CharField(max_length=100,
+                                                    blank=True), blank=True)
+    organization_address = ArrayField(models.TextField(blank=True), blank=True)
     organization_country = ArrayField(models.CharField(max_length=100,
                                                        choices=COUNTRIES,
-                                                       blank=True))
+                                                       blank=True), blank=True)
     organization_country_ontology = ArrayField(
         models.CharField(max_length=100, choices=COUNTRIES_ONTOLOGY,
-                         blank=True))
+                         blank=True), blank=True)
 
     # optional
     description = models.TextField(blank=True)
-    person_initial = ArrayField(models.CharField(max_length=100, blank=True))
-    organization_uri = ArrayField(models.TextField(blank=True))
+    person_initial = ArrayField(models.CharField(max_length=100, blank=True),
+                                blank=True)
+    organization_uri = ArrayField(models.TextField(blank=True), blank=True)
     publication_doi = models.CharField(max_length=100, blank=True)
 
 
@@ -254,7 +256,8 @@ class AnimalInfo(models.Model):
                                                     choices=LOCATION_UNITS)
 
     # optional
-    child_of = ArrayField(models.CharField(max_length=100, blank=True), size=2)
+    child_of = ArrayField(models.CharField(max_length=100, blank=True),
+                          size=2, blank=True)
 
 
 class SampleDataInfo(models.Model):
@@ -269,7 +272,7 @@ class SampleDataInfo(models.Model):
 
     # recommended
     specimen_collection_protocol = models.CharField(max_length=100, blank=True)
-    collection_date = models.DateField(blank=True)
+    collection_date = models.DateField(blank=True, null=True)
     collection_date_unit = models.CharField(max_length=100, blank=True,
                                             choices=DATE_UNITS)
     collection_place_latitude = models.DecimalField(decimal_places=10,

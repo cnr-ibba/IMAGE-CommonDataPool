@@ -3,4 +3,3 @@ djangorestframework
 psycopg2-binary
 gunicorn
 python-decouple
-django_postgres_extensions
