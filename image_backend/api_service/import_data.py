@@ -2,8 +2,11 @@ import json
 import requests
 import sys
 
+from .fetch_biosamples import read_etags
+
 
 def import_data():
+    etags = read_etags()
     organisms_data = read_data('organisms')
     specimens_data = read_data('specimens')
     for organism in organisms_data:
