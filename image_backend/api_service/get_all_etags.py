@@ -15,7 +15,7 @@ def main():
                 resp = requests.get(
                     f"http://www.ebi.ac.uk/biosamples/samples/{my_id}").headers
                 if 'ETag' in resp and resp['ETag']:
-                    ETAG.append("{}\t{}".format(my_id, resp['ETag']))
+                    ETAG.append(f"{my_id}\t{resp['ETag']}")
 
 
 async def fetch_all_etags(ids):
@@ -44,6 +44,6 @@ def fetch_biosample_ids():
 if __name__ == "__main__":
     main()
     today = date.today().strftime('%Y-%m-%d')
-    with open("etag_list_{}.txt".format(today), 'w') as w:
+    with open(f"etag_list_{today}.txt", 'w') as w:
         for item in sorted(ETAG):
             w.write(item + "\n")

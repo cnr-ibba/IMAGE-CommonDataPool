@@ -57,7 +57,7 @@ class SampleInfo(models.Model):
     project = models.CharField(max_length=100)
     submission_title = models.TextField()
     material = models.CharField(max_length=100)
-    material_ontology = models.CharField(max_length=100,)
+    material_ontology = models.CharField(max_length=100)
     person_last_name = ArrayField(models.CharField(max_length=100))
     person_email = ArrayField(models.CharField(max_length=100))
     person_affiliation = ArrayField(models.CharField(max_length=100))
@@ -68,11 +68,12 @@ class SampleInfo(models.Model):
     organization_role_ontology = ArrayField(models.CharField(max_length=100))
     gene_bank_name = models.CharField(max_length=100)
     gene_bank_country = models.CharField(max_length=100)
-    gene_bank_country_ontology = models.CharField(max_length=100,)
+    gene_bank_country_ontology = models.CharField(max_length=100)
     data_source_type = models.CharField(max_length=100)
     data_source_version = models.CharField(max_length=100)
     species = models.CharField(max_length=100)
     species_ontology = models.CharField(max_length=100)
+    etag = models.CharField(max_length=100)
 
     # recommended
     submission_description = models.TextField(blank=True)
