@@ -48,36 +48,37 @@ def parse_biosample(sample, rules):
     :return: dict of parsed values
     """
     results = dict()
-    for field_name in rules['mandatory']:
-        if field_name in sample['characteristics']:
-            biosample_name = field_name
-        elif field_name.lower() in sample['characteristics']:
-            biosample_name = field_name.lower()
-        else:
-            print(f"Error: can't find this field {field_name} in sample")
-            return
-        cdp_name = convert_to_underscores(field_name)
-        allow_multiple = field_name in rules['allow_multiple']
+    for field_type in ['mandatory', 'recommended', 'optional']:
+        for field_name in rules[field_type]:
+            if field_name in sample['characteristics']:
+                biosample_name = field_name
+            elif field_name.lower() in sample['characteristics']:
+                biosample_name = field_name.lower()
+            else:
+                print(f"Error: can't find this field {field_name} in sample")
+                return
+            cdp_name = convert_to_underscores(field_name)
+            allow_multiple = field_name in rules['allow_multiple']
 
-        # Should fetch 'text' field only
-        if field_name not in rules['with_ontology'] and \
-                field_name not in rules['with_units']:
-            results[cdp_name] = get_text_unit_field(sample, biosample_name,
-                                                    'text', allow_multiple)
+            # Should fetch 'text' field only
+            if field_name not in rules['with_ontology'] and \
+                    field_name not in rules['with_units']:
+                results[cdp_name] = get_text_unit_field(sample, biosample_name,
+                                                        'text', allow_multiple)
 
-        # Should fetch 'text' and 'ontology' fields
-        if field_name in rules['with_ontology']:
-            results[cdp_name] = get_text_unit_field(
-                sample, biosample_name, 'text', allow_multiple)
-            results[f"{cdp_name}_ontology"] = get_ontology_field(
-                sample, biosample_name, allow_multiple)
+            # Should fetch 'text' and 'ontology' fields
+            if field_name in rules['with_ontology']:
+                results[cdp_name] = get_text_unit_field(
+                    sample, biosample_name, 'text', allow_multiple)
+                results[f"{cdp_name}_ontology"] = get_ontology_field(
+                    sample, biosample_name, allow_multiple)
 
-        # Should fetch 'text' and 'unit' fields
-        if field_name in rules['with_units']:
-            results[cdp_name] = get_text_unit_field(
-                sample, biosample_name, 'text', allow_multiple)
-            results[f"{cdp_name}_unit"] = get_text_unit_field(
-                sample, biosample_name, 'unit', allow_multiple)
+            # Should fetch 'text' and 'unit' fields
+            if field_name in rules['with_units']:
+                results[cdp_name] = get_text_unit_field(
+                    sample, biosample_name, 'text', allow_multiple)
+                results[f"{cdp_name}_unit"] = get_text_unit_field(
+                    sample, biosample_name, 'unit', allow_multiple)
     return results
 
 
@@ -92,11 +93,15 @@ def get_text_unit_field(sample, biosample_name, field_to_fetch, is_list=False):
     """
     if is_list:
         tmp = list()
-        for item in sample['characteristics'][biosample_name]:
-            tmp.append(item[field_to_fetch])
+        if biosample_name in sample['characteristics']:
+            for item in sample['characteristics'][biosample_name]:
+                tmp.append(item[field_to_fetch])
         return tmp
     else:
-        return sample['characteristics'][biosample_name][0][field_to_fetch]
+        if biosample_name in sample['characteristics']:
+            return sample['characteristics'][biosample_name][0][field_to_fetch]
+        else:
+            return ''
 
 
 def get_ontology_field(sample, biosample_name, is_list=False):
@@ -109,11 +114,16 @@ def get_ontology_field(sample, biosample_name, is_list=False):
     """
     if is_list:
         tmp = list()
-        for item in sample['characteristics'][biosample_name]:
-            tmp.append(item['ontologyTerms'][0])
+        if biosample_name in sample['characteristics']:
+            for item in sample['characteristics'][biosample_name]:
+                tmp.append(item['ontologyTerms'][0])
         return tmp
     else:
-        return sample['characteristics'][biosample_name][0]['ontologyTerms'][0]
+        if biosample_name in sample['characteristics']:
+            return sample['characteristics'][biosample_name][0][
+                'ontologyTerms'][0]
+        else:
+            return ''
 
 
 def get_ruleset():

@@ -1,133 +1,6 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
-PROJECT_TYPES = (
-    ('IMAGE', 'IMAGE'),
-)
-
-MATERIAL = (
-    ('organism', 'organism'),
-    ('specimen from organism', 'specimen from organism'),
-)
-
-MATERIAL_ONTOLOGY = (
-    ('OBI_010002', 'OBI_010002'),
-    ('OBI_0001479', 'OBI_0001479')
-)
-
-COUNTRIES = (
-    ('France', 'France'),
-    ('Egypt', 'Egypt'),
-    ('Colombia', 'Colombia'),
-    ('Switzerland', 'Switzerland'),
-    ('Netherlands', 'Netherlands'),
-    ('Germany', 'Germany'),
-    ('Italy', 'Italy'),
-    ('Hungary', 'Hungary'),
-    ('Morocco', 'Morocco'),
-    ('Spain', 'Spain'),
-    ('Argentina', 'Argentina'),
-    ('Sweden', 'Sweden'),
-    ('United Kingdom', 'United Kingdom'),
-    ('Poland', 'Poland'),
-    ('Portugal', 'Portugal'),
-    ('Austria', 'Austria')
-)
-
-COUNTRIES_ONTOLOGY = (
-    ('NCIT_C16592', 'NCIT_C16592'),
-    ('NCIT_C16530', 'NCIT_C16530'),
-    ('NCIT_C16449', 'NCIT_C16449'),
-    ('NCIT_C17181', 'NCIT_C17181'),
-    ('NCIT_C16903', 'NCIT_C16903'),
-    ('NCIT_C16636', 'NCIT_C16636'),
-    ('NCIT_C16761', 'NCIT_C16761'),
-    ('NCIT_C16699', 'NCIT_C16699'),
-    ('NCIT_C16878', 'NCIT_C16878'),
-    ('NCIT_C17152', 'NCIT_C17152'),
-    ('NCIT_C16305', 'NCIT_C16305'),
-    ('NCIT_C17180', 'NCIT_C17180'),
-    ('NCIT_C17233', 'NCIT_C17233'),
-    ('NCIT_C17002', 'NCIT_C17002'),
-    ('NCIT_C17006', 'NCIT_C17006'),
-    ('NCIT_C16312', 'NCIT_C16312')
-)
-
-DATA_SOURCE_TYPE = (
-    ('CyroWeb', 'CyroWeb'),
-    ('CRB-Anim', 'CRB-Anim'),
-    ('Template', 'Template')
-)
-
-DATE_UNITS = (
-    ('YYYY-MM-DD', 'YYYY-MM-DD'),
-    ('YYYY-MM', 'YYYY-MM'),
-    ('YYYY', 'YYYY')
-)
-
-LOCATION_UNITS = (
-    ('decimal degrees', 'decimal degrees'),
-)
-
-LOCATION_ACCURACY = (
-    ('missing geographic information', 'missing geographic information'),
-    ('country level', 'country level'),
-    ('region level', 'region level'),
-    ('precise coordinates', 'precise coordinates'),
-    ('unknown accuracy level', 'unknown accuracy level')
-)
-
-AGE_UNITS = (
-    ('minutes', 'minutes'),
-    ('hours', 'hours'),
-    ('month', 'month'),
-    ('year', 'year'),
-    ('days', 'days'),
-    ('weeks', 'weeks'),
-    ('months', 'months'),
-    ('years', 'years'),
-    ('minute', 'minute'),
-    ('hour', 'hour'),
-    ('day', 'day'),
-    ('week', 'week')
-)
-
-SAMPLE_STORAGE = (
-    ('ambient temperature', 'ambient temperature'),
-    ('cut slide', 'cut slide'),
-    ('frozen, -80 degrees Celsius freezer',
-     'frozen, -80 degrees Celsius freezer'),
-    ('frozen, -40 degrees Celsius freezer',
-     'frozen, -40 degrees Celsius freezer'),
-    ('frozen, -20 degrees Celsius freezer',
-     'frozen, -20 degrees Celsius freezer'),
-    ('frozen, liquid nitrogen', 'frozen, liquid nitrogen'),
-    ('frozen, vapor phase', 'frozen, vapor phase'),
-    ('paraffin block', 'paraffin block'),
-    ('RNAlater, frozen -20 degrees Celsius',
-     'RNAlater, frozen -20 degrees Celsius'),
-    ('TRIzol, frozen', 'TRIzol, frozen'),
-    ('paraffin block at ambient temperatures (+15 to +30 degrees Celsius)',
-     'paraffin block at ambient temperatures (+15 to +30 degrees Celsius)'),
-    ('freeze dried', 'freeze dried'),
-)
-
-SAMPLE_STORAGE_PROCESSING = (
-    ('cryopreservation in liquid nitrogen (dead tissue)',
-     'cryopreservation in liquid nitrogen (dead tissue)'),
-    ('cryopreservation in dry ice (dead tissue)',
-     'cryopreservation in dry ice (dead tissue)'),
-    ('cryopreservation of live cells in liquid nitrogen',
-     'cryopreservation of live cells in liquid nitrogen'),
-    ('cryopreservation, other', 'cryopreservation, other'),
-    ('formalin fixed, unbuffered', 'formalin fixed, unbuffered'),
-    ('formalin fixed, buffered', 'formalin fixed, buffered'),
-    ('formalin fixed and paraffin embedded',
-     'formalin fixed and paraffin embedded'),
-    ('freeze dried (vaiable for reproduction)',
-     'freeze dried (vaiable for reproduction)'),
-    ('freeze dried', 'freeze dried')
-)
 
 EXPERIMENT_TYPE_ONTOLOGY_ID = (
     ('EFO_0007045', 'ATAC-seq'),
@@ -181,11 +54,10 @@ class SampleInfo(models.Model):
     # mandatory
     data_source_id = models.CharField(max_length=100, primary_key=True)
     alternative_id = models.CharField(max_length=100)
-    project = models.CharField(max_length=100, choices=PROJECT_TYPES)
+    project = models.CharField(max_length=100)
     submission_title = models.TextField()
-    material = models.CharField(max_length=100, choices=MATERIAL)
-    material_ontology = models.CharField(max_length=100,
-                                         choices=MATERIAL_ONTOLOGY)
+    material = models.CharField(max_length=100)
+    material_ontology = models.CharField(max_length=100,)
     person_last_name = ArrayField(models.CharField(max_length=100))
     person_email = ArrayField(models.EmailField())
     person_affiliation = ArrayField(models.CharField(max_length=100))
@@ -195,11 +67,9 @@ class SampleInfo(models.Model):
     organization_role = ArrayField(models.CharField(max_length=100))
     organization_role_ontology = ArrayField(models.CharField(max_length=100))
     gene_bank_name = models.CharField(max_length=100)
-    gene_bank_country = models.CharField(max_length=100, choices=COUNTRIES)
-    gene_bank_country_ontology = models.CharField(max_length=100,
-                                                  choices=COUNTRIES_ONTOLOGY)
-    data_source_type = models.CharField(max_length=100,
-                                        choices=DATA_SOURCE_TYPE)
+    gene_bank_country = models.CharField(max_length=100)
+    gene_bank_country_ontology = models.CharField(max_length=100,)
+    data_source_type = models.CharField(max_length=100)
     data_source_version = models.CharField(max_length=100)
     species = models.CharField(max_length=100)
     species_ontology = models.CharField(max_length=100)
@@ -210,11 +80,9 @@ class SampleInfo(models.Model):
                                                     blank=True), blank=True)
     organization_address = ArrayField(models.TextField(blank=True), blank=True)
     organization_country = ArrayField(models.CharField(max_length=100,
-                                                       choices=COUNTRIES,
                                                        blank=True), blank=True)
     organization_country_ontology = ArrayField(
-        models.CharField(max_length=100, choices=COUNTRIES_ONTOLOGY,
-                         blank=True), blank=True)
+        models.CharField(max_length=100, blank=True), blank=True)
 
     # optional
     description = models.TextField(blank=True)
@@ -232,28 +100,24 @@ class AnimalInfo(models.Model):
     efabis_breed_country = models.CharField(max_length=100)
     sex = models.CharField(max_length=100)
     sex_ontology = models.CharField(max_length=100)
-    birth_location_accuracy = models.CharField(max_length=100,
-                                               choices=LOCATION_ACCURACY)
+    birth_location_accuracy = models.CharField(max_length=100)
 
     # recommended
     mapped_breed = models.CharField(max_length=100, blank=True)
     mapped_breed_ontology = models.CharField(max_length=100, blank=True)
     birth_date = models.CharField(max_length=100, blank=True)
-    birth_date_unit = models.CharField(max_length=100, blank=True,
-                                       choices=DATE_UNITS)
+    birth_date_unit = models.CharField(max_length=100, blank=True)
     birth_location = models.CharField(max_length=100, blank=True)
     birth_location_longitude = models.DecimalField(decimal_places=10,
                                                    max_digits=20, blank=True,
                                                    null=True)
     birth_location_longitude_unit = models.CharField(max_length=100,
-                                                     blank=True,
-                                                     choices=LOCATION_UNITS)
+                                                     blank=True)
     birth_location_latitude = models.DecimalField(decimal_places=10,
                                                   max_digits=20, blank=True,
                                                   null=True)
     birth_location_latitude_unit = models.CharField(max_length=100,
-                                                    blank=True,
-                                                    choices=LOCATION_UNITS)
+                                                    blank=True)
 
     # optional
     child_of = ArrayField(models.CharField(max_length=100, blank=True),
@@ -265,51 +129,41 @@ class SampleDataInfo(models.Model):
     sample = models.ForeignKey(SampleInfo, related_name="specimens",
                                on_delete=models.CASCADE)
     derived_from = models.CharField(max_length=100)
-    collection_place_accuracy = models.CharField(max_length=100,
-                                                 choices=LOCATION_ACCURACY)
+    collection_place_accuracy = models.CharField(max_length=100)
     organism_part = models.CharField(max_length=100)
     organism_part_ontology = models.CharField(max_length=100)
 
     # recommended
     specimen_collection_protocol = models.CharField(max_length=100, blank=True)
     collection_date = models.DateField(blank=True, null=True)
-    collection_date_unit = models.CharField(max_length=100, blank=True,
-                                            choices=DATE_UNITS)
+    collection_date_unit = models.CharField(max_length=100, blank=True)
     collection_place_latitude = models.DecimalField(decimal_places=10,
                                                     max_digits=20, blank=True,
                                                     null=True)
     collection_place_latitude_unit = models.CharField(max_length=100,
-                                                      blank=True,
-                                                      choices=LOCATION_UNITS)
+                                                      blank=True)
     collection_place_longitude = models.DecimalField(decimal_places=10,
                                                      max_digits=20, blank=True,
                                                      null=True)
     collection_place_longitude_unit = models.CharField(max_length=100,
-                                                       blank=True,
-                                                       choices=LOCATION_UNITS)
+                                                       blank=True)
     collection_place = models.CharField(max_length=100, blank=True)
     developmental_stage = models.CharField(max_length=100, blank=True)
     developmental_stage_ontology = models.CharField(max_length=100, blank=True)
     physiological_stage = models.CharField(max_length=100, blank=True)
     physiological_stage_ontology = models.CharField(max_length=100, blank=True)
     availability = models.CharField(max_length=100, blank=True)
-    sample_storage = models.CharField(max_length=100, choices=SAMPLE_STORAGE,
-                                      blank=True)
-    sample_storage_processing = models.CharField(
-        max_length=100,
-        choices=SAMPLE_STORAGE_PROCESSING,
-        blank=True)
+    sample_storage = models.CharField(max_length=100, blank=True)
+    sample_storage_processing = models.CharField(max_length=100, blank=True)
 
     # optional
     animal_age_at_collection = models.IntegerField(blank=True, null=True)
     animal_age_at_collection_unit = models.CharField(max_length=100,
-                                                     blank=True,
-                                                     choices=AGE_UNITS)
+                                                     blank=True)
     sampling_to_preparation_interval = models.IntegerField(blank=True,
                                                            null=True)
     sampling_to_preparation_interval_unit = models.CharField(max_length=100,
-                                                             blank=True,
-                                                             choices=AGE_UNITS)
+                                                             blank=True)
 
 
 class ExperimentInfo(models.Model):
