@@ -26,7 +26,7 @@ Upload BioSamples data:
 
 ```python ./api-service/fetch_biosamples.py```
 
-```python ./import_test_data.py {admin password}```
+```python ./api-service/import_data.py {admin password}```
 
 Stop app:
 
