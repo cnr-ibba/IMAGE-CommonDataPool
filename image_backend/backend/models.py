@@ -59,7 +59,7 @@ class SampleInfo(models.Model):
     material = models.CharField(max_length=100)
     material_ontology = models.CharField(max_length=100,)
     person_last_name = ArrayField(models.CharField(max_length=100))
-    person_email = ArrayField(models.EmailField())
+    person_email = ArrayField(models.CharField(max_length=100))
     person_affiliation = ArrayField(models.CharField(max_length=100))
     person_role = ArrayField(models.CharField(max_length=100))
     person_role_ontology = ArrayField(models.CharField(max_length=100))
@@ -108,14 +108,10 @@ class AnimalInfo(models.Model):
     birth_date = models.CharField(max_length=100, blank=True)
     birth_date_unit = models.CharField(max_length=100, blank=True)
     birth_location = models.CharField(max_length=100, blank=True)
-    birth_location_longitude = models.DecimalField(decimal_places=10,
-                                                   max_digits=20, blank=True,
-                                                   null=True)
+    birth_location_longitude = models.CharField(max_length=100, blank=True)
     birth_location_longitude_unit = models.CharField(max_length=100,
                                                      blank=True)
-    birth_location_latitude = models.DecimalField(decimal_places=10,
-                                                  max_digits=20, blank=True,
-                                                  null=True)
+    birth_location_latitude = models.CharField(max_length=100, blank=True)
     birth_location_latitude_unit = models.CharField(max_length=100,
                                                     blank=True)
 
@@ -135,16 +131,12 @@ class SampleDataInfo(models.Model):
 
     # recommended
     specimen_collection_protocol = models.CharField(max_length=100, blank=True)
-    collection_date = models.DateField(blank=True, null=True)
+    collection_date = models.CharField(max_length=100, blank=True)
     collection_date_unit = models.CharField(max_length=100, blank=True)
-    collection_place_latitude = models.DecimalField(decimal_places=10,
-                                                    max_digits=20, blank=True,
-                                                    null=True)
+    collection_place_latitude = models.CharField(max_length=100, blank=True)
     collection_place_latitude_unit = models.CharField(max_length=100,
                                                       blank=True)
-    collection_place_longitude = models.DecimalField(decimal_places=10,
-                                                     max_digits=20, blank=True,
-                                                     null=True)
+    collection_place_longitude = models.CharField(max_length=100, blank=True)
     collection_place_longitude_unit = models.CharField(max_length=100,
                                                        blank=True)
     collection_place = models.CharField(max_length=100, blank=True)
@@ -157,11 +149,11 @@ class SampleDataInfo(models.Model):
     sample_storage_processing = models.CharField(max_length=100, blank=True)
 
     # optional
-    animal_age_at_collection = models.IntegerField(blank=True, null=True)
+    animal_age_at_collection = models.CharField(max_length=100, blank=True)
     animal_age_at_collection_unit = models.CharField(max_length=100,
                                                      blank=True)
-    sampling_to_preparation_interval = models.IntegerField(blank=True,
-                                                           null=True)
+    sampling_to_preparation_interval = models.CharField(max_length=100,
+                                                        blank=True)
     sampling_to_preparation_interval_unit = models.CharField(max_length=100,
                                                              blank=True)
 

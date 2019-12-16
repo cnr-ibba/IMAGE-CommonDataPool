@@ -55,8 +55,15 @@ def parse_biosample(sample, rules):
             elif field_name.lower() in sample['characteristics']:
                 biosample_name = field_name.lower()
             else:
-                print(f"Error: can't find this field {field_name} in sample")
-                return
+                cdp_name = convert_to_underscores(field_name)
+                return_value = list() if field_name in rules['allow_multiple'] \
+                    else ''
+                results[cdp_name] = return_value
+                if field_name in rules['with_ontology']:
+                    results[f'{cdp_name}_ontology'] = return_value
+                if field_name in rules['with_units']:
+                    results[f'{cdp_name}_unit'] = return_value
+                continue
             cdp_name = convert_to_underscores(field_name)
             allow_multiple = field_name in rules['allow_multiple']
 
@@ -160,7 +167,8 @@ def get_ruleset():
                 results['with_units'].append(rule['Name'])
 
             # Adding rules with possible multiple values
-            if rule['Allow Multiple'] == 'yes':
+            if rule['Allow Multiple'] == 'yes' \
+                    or rule['Allow Multiple'] == 'max 2':
                 results['allow_multiple'].append(rule['Name'])
         if rule_type['name'] == 'standard':
             standard = results
