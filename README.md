@@ -22,7 +22,9 @@ Start app:
 
 ```sudo docker-compose up -d```
 
-Upload test data:
+Upload BioSamples data:
+
+```python ./api-service/fetch_biosamples.py```
 
 ```python ./import_test_data.py {admin password}```
 
