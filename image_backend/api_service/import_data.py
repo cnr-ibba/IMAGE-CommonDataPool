@@ -3,6 +3,8 @@ import requests
 import sys
 from datetime import date
 
+BACKEND_URL = 'http://localhost:26081/data_portal/backend'
+
 
 def import_data():
     # Read etags from biosamples and CPD
@@ -18,12 +20,12 @@ def import_data():
     if organism_etags == {} and specimen_etags == {}:
         for organism in organisms_data:
             requests.post(
-                'http://localhost:26081/data_portal/backend/organism/',
-                json=organism, auth=('admin', sys.argv[1]))
+                f'{BACKEND_URL}/organism/', json=organism,
+                auth=('admin', sys.argv[1]))
         for specimen in specimens_data:
             requests.post(
-                'http://localhost:26081/data_portal/backend/specimen/',
-                json=specimen, auth=('admin', sys.argv[1]))
+                f'{BACKEND_URL}/specimen/', json=specimen,
+                auth=('admin', sys.argv[1]))
 
     for biosample_id, etag in biosample_etags.items():
         if biosample_id not in organism_etags and biosample_id \
@@ -31,46 +33,52 @@ def import_data():
             add_single_record(biosample_id, organisms_data, specimens_data)
         if biosample_id in organism_etags \
                 and etag != organism_etags[biosample_id]:
-            update_organism_record(biosample_id)
+            update_organism_record(biosample_id, organisms_data)
         if biosample_id in specimen_etags \
                 and etag != specimen_etags[biosample_id]:
-            update_specimen_record(biosample_id)
+            update_specimen_record(biosample_id, specimens_data)
 
 
-def add_single_record(biosample_id, organisms_data, specimens_data):
+def add_single_record(biosample_id, organisms_data=None, specimens_data=None):
     """
     This function will add new record to CPD
     :param biosample_id: id of record from biosample
     :param organisms_data: file with organisms data
     :param specimens_data: file with specimens data
     """
-    for record in organisms_data:
-        if record['data_source_id'] == biosample_id:
-            requests.post(
-                'http://localhost:26081/data_portal/backend/organism/',
-                json=record, auth=('admin', sys.argv[1]))
+    if organisms_data is not None:
+        for record in organisms_data:
+            if record['data_source_id'] == biosample_id:
+                response = requests.post(
+                    f'{BACKEND_URL}/organism/', json=record,
+                    auth=('admin', sys.argv[1]))
 
-    for record in specimens_data:
-        if record['data_source_id'] == biosample_id:
-            requests.post(
-                'http://localhost:26081/data_portal/backend/specimen/',
-                json=record, auth=('admin', sys.argv[1]))
+    if specimens_data is not None:
+        for record in specimens_data:
+            if record['data_source_id'] == biosample_id:
+                response = requests.post(
+                    f'{BACKEND_URL}/specimen/', json=record,
+                    auth=('admin', sys.argv[1]))
 
 
-def update_organism_record(biosample_id):
+def update_organism_record(biosample_id, organisms_data):
     """
     This function will update single record in organism table
     :param biosample_id: id of record from biosample
+    :param organisms_data: file with organisms data
     """
-    pass
+    response = requests.delete(f"{BACKEND_URL}/organism/{biosample_id}")
+    add_single_record(biosample_id, organisms_data=organisms_data)
 
 
-def update_specimen_record(biosample_id):
+def update_specimen_record(biosample_id, specimens_data):
     """
     This function will update single record in specimens table
     :param biosample_id: id of record from biosample
+    :param specimens_data: file with specimens data
     """
-    pass
+    response = requests.delete(f"{BACKEND_URL}/specimen/{biosample_id}")
+    add_single_record(biosample_id, specimens_data=specimens_data)
 
 
 def read_biosample_etags():
@@ -95,8 +103,7 @@ def read_cdp_etags(records_type):
     :return: dict with etags
     """
     cdp_etags = dict()
-    response = requests.get(f"http://localhost:26081/data_portal/backend/"
-                            f"{records_type}").json()
+    response = requests.get(f"{BACKEND_URL}/{records_type}").json()
     for record in response:
         cdp_etags[record['data_source_id']] = record['etag']
     return cdp_etags

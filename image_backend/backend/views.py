@@ -39,6 +39,26 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+    def delete(self, request, *a, **kw):
+        try:
+            organism = self.queryset.get(data_source_id=kw['specimen_id'])
+            organism.delete()
+            return Response(
+                data={
+                    "message": "Specimen with id: {} was deleted".format(
+                        kw['specimen_id'])
+                },
+                status=status.HTTP_202_ACCEPTED
+            )
+        except:
+            return Response(
+                data={
+                    "message": "Specimen with id: {} does not exist".format(
+                        kw['specimen_id'])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 class ListCreateOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
@@ -64,6 +84,26 @@ class OrganismsDetailsView(generics.RetrieveAPIView):
         try:
             organism = self.queryset.get(data_source_id=kw['organism_id'])
             return Response(OrganismsSerializer(organism).data)
+        except:
+            return Response(
+                data={
+                    "message": "Organism with id: {} does not exist".format(
+                        kw['organism_id'])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def delete(self, request, *a, **kw):
+        try:
+            organism = self.queryset.get(data_source_id=kw['organism_id'])
+            organism.delete()
+            return Response(
+                data={
+                    "message": "Organism with id: {} was deleted".format(
+                        kw['organism_id'])
+                },
+                status=status.HTTP_202_ACCEPTED
+            )
         except:
             return Response(
                 data={
