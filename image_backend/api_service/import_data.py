@@ -26,6 +26,7 @@ def import_data():
             requests.post(
                 f'{BACKEND_URL}/specimen/', json=specimen,
                 auth=('admin', sys.argv[1]))
+        return
 
     for biosample_id, etag in biosample_etags.items():
         if biosample_id not in organism_etags and biosample_id \
