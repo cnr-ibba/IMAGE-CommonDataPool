@@ -3,7 +3,7 @@ import requests
 import sys
 from datetime import date
 
-BACKEND_URL = 'http://localhost:26081/data_portal/backend'
+BACKEND_URL = 'https://www.image2020genebank.eu/data_portal/backend'
 
 
 def import_data():
