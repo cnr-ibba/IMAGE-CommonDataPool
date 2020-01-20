@@ -68,7 +68,8 @@ def update_organism_record(biosample_id, organisms_data):
     :param biosample_id: id of record from biosample
     :param organisms_data: file with organisms data
     """
-    response = requests.delete(f"{BACKEND_URL}/organism/{biosample_id}")
+    response = requests.delete(f"{BACKEND_URL}/organism/{biosample_id}",
+                               auth=('admin', sys.argv[1]))
     add_single_record(biosample_id, organisms_data=organisms_data)
 
 
