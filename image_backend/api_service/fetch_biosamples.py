@@ -1,16 +1,29 @@
 import requests
 import json
-
+import logging
 from datetime import date
 
 SAMPLE_RULESET_URL = 'https://raw.githubusercontent.com/cnr-ibba/' \
                      'IMAGE-metadata/master/rulesets/sample_ruleset.json'
+DAD_IS_BREEDS = ['Gouwenaar', 'Havana', 'Ekster', 'Hulstlander konijn',
+                 'Beige', 'Sallander', 'Deilenaar', 'Thrianta konijn',
+                 'Twentse landgans', 'Stabijhoun', 'Wetterhoun',
+                 'Hulstlander', 'Thrianta']
 
 
 def fetch_biosamples():
     """
     Main function to fet data from biosamples
     """
+    new_logger = logging.getLogger('fetch_biosamples')
+    today = date.today().strftime('%Y-%m-%d')
+    f_handler = logging.FileHandler(f"fetch_biosamples_{today}.log")
+    f_format = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - line %(lineno)s - '
+        '%(message)s', datefmt='%y-%b-%d %H:%M:%S')
+    f_handler.setFormatter(f_format)
+    new_logger.addHandler(f_handler)
+    new_logger.setLevel(logging.INFO)
     # Get rules
     standard_rules, organism_rules, specimen_rules = get_ruleset()
     etags = read_etags()
@@ -21,26 +34,52 @@ def fetch_biosamples():
     organisms = list()
     specimens = list()
     for sample in samples:
-        tmp = parse_biosample(sample, standard_rules)
+        errors = dict()
+        errors_organism = dict()
+        tmp_results, errors = parse_biosample(sample, standard_rules)
+        tmp = tmp_results
         tmp['data_source_id'] = sample['accession']
         tmp['etag'] = etags[sample['accession']]
         if tmp['material'] == 'organism':
-            tmp['organisms'] = [parse_biosample(sample, organism_rules)]
+            tmp_results, errors_organism = parse_biosample(sample,
+                                                           organism_rules)
+            tmp['organisms'] = [tmp_results]
             if 'relationships' in sample:
                 relationships = list()
                 for relationship in sample['relationships']:
                     if relationship['type'] == 'child of':
+                        if 'SAMEA' not in relationship['target']:
+                            new_logger.error(f"{sample['accession']} doesn't "
+                                             f"have proper name for child of "
+                                             f"relationship, "
+                                             f"{relationship['target']} "
+                                             f"provided")
+                            continue
                         relationships.append(relationship['target'])
                 tmp['organisms'][0]['child_of'] = relationships
             organisms.append(tmp)
         else:
-            tmp['specimens'] = [parse_biosample(sample, specimen_rules)]
+            tmp_results, _ = parse_biosample(sample, specimen_rules)
+            tmp['specimens'] = [tmp_results]
             if 'relationships' in sample:
                 for relationship in sample['relationships']:
                     if relationship['type'] == 'derived from':
+                        if 'SAMEA' not in relationship['target']:
+                            new_logger.error(f"{sample['accession']} doesn't "
+                                             f"have proper name for derived "
+                                             f"from relationship, "
+                                             f"{relationship['target']} "
+                                             f"provided")
+                            continue
                         tmp['specimens'][0]['derived_from'] = \
                             relationship['target']
             specimens.append(tmp)
+        if 'species' in errors and 'supplied_breed' in errors_organism:
+            new_logger.error(f"For country: \""
+                             f"{errors_organism['efabis_breed_country']}\", "
+                             f"species: \"{errors['species']}\" and "
+                             f"breed: \"{errors_organism['supplied_breed']}\" "
+                             f"there is no record in dad-is database")
     return organisms, specimens
 
 
@@ -65,9 +104,11 @@ def parse_biosample(sample, rules):
     This function will parse biosample record using rules
     :param sample: biosample record
     :param rules: rules for this record
+    :param logger: logger instance to write errors
     :return: dict of parsed values
     """
     results = dict()
+    errors = dict()
     for field_type in ['mandatory', 'recommended', 'optional']:
         for field_name in rules[field_type]:
             if field_name in sample['characteristics']:
@@ -106,7 +147,14 @@ def parse_biosample(sample, rules):
                     sample, biosample_name, 'text', allow_multiple)
                 results[f"{cdp_name}_unit"] = get_text_unit_field(
                     sample, biosample_name, 'unit', allow_multiple)
-    return results
+            if cdp_name == 'species':
+                errors[cdp_name] = results[cdp_name]
+            if cdp_name == 'supplied_breed' and results[cdp_name] not in \
+                    DAD_IS_BREEDS:
+                errors[cdp_name] = results[cdp_name]
+            if cdp_name == 'efabis_breed_country':
+                errors[cdp_name] = results[cdp_name]
+    return results, errors
 
 
 def get_text_unit_field(sample, biosample_name, field_to_fetch, is_list=False):
