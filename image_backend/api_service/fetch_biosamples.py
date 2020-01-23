@@ -8,7 +8,7 @@ SAMPLE_RULESET_URL = 'https://raw.githubusercontent.com/cnr-ibba/' \
 DAD_IS_BREEDS = ['Gouwenaar', 'Havana', 'Ekster', 'Hulstlander konijn',
                  'Beige', 'Sallander', 'Deilenaar', 'Thrianta konijn',
                  'Twentse landgans', 'Stabijhoun', 'Wetterhoun',
-                 'Hulstlander', 'Thrianta']
+                 'Hulstlander', 'Thrianta', 'Flevolander']
 
 
 def fetch_biosamples():
@@ -29,7 +29,7 @@ def fetch_biosamples():
     etags = read_etags()
 
     results = requests.get('https://www.ebi.ac.uk/biosamples/samples'
-                           '?size=1000&filter=attr:project:IMAGE').json()
+                           '?size=1000000&filter=attr:project:IMAGE').json()
     samples = results['_embedded']['samples']
     organisms = list()
     specimens = list()
