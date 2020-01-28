@@ -1,9 +1,17 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import status
+from rest_framework.pagination import PageNumberPagination
 
 from .models import SampleInfo
-from .serializers import SpecimensSerializer, OrganismsSerializer
+from .serializers import SpecimensSerializer, OrganismsSerializer, \
+    OrganismsSerializerShort, SpecimensSerializerShort
+
+
+class SmallResultsSetPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 1000000
 
 
 class ListCreateSpecimensView(generics.ListCreateAPIView):
@@ -15,6 +23,23 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = SpecimensSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=ValueError):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.error_messages,
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
+    serializer_class = SpecimensSerializerShort
+    pagination_class = SmallResultsSetPagination
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def get_queryset(self):
+        return SampleInfo.objects.filter(specimens__isnull=False)
+
+    def post(self, request, *args, **kwargs):
+        serializer = SpecimensSerializerShort(data=request.data)
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -69,6 +94,23 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = OrganismsSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=ValueError):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.error_messages,
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
+    serializer_class = OrganismsSerializerShort
+    pagination_class = SmallResultsSetPagination
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def get_queryset(self):
+        return SampleInfo.objects.filter(organisms__isnull=False)
+
+    def post(self, request, *args, **kwargs):
+        serializer = OrganismsSerializerShort(data=request.data)
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

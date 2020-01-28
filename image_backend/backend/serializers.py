@@ -20,6 +20,13 @@ class SampleDataInfoSerializer(serializers.ModelSerializer):
                   'sampling_to_preparation_interval_unit')
 
 
+class SampleDataInfoSerializerShort(serializers.ModelSerializer):
+    class Meta:
+        model = SampleDataInfo
+        fields = ('derived_from', 'organism_part',
+                  'collection_place_latitude', 'collection_place_longitude')
+
+
 class AnimalInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnimalInfo
@@ -29,6 +36,13 @@ class AnimalInfoSerializer(serializers.ModelSerializer):
                   'birth_location', 'birth_location_longitude',
                   'birth_location_longitude_unit', 'birth_location_latitude',
                   'birth_location_latitude_unit', 'child_of')
+
+
+class AnimalInfoSerializerShort(serializers.ModelSerializer):
+    class Meta:
+        model = AnimalInfo
+        fields = ('supplied_breed', 'efabis_breed_country', 'sex',
+                  'birth_location_longitude', 'birth_location_latitude')
 
 
 class SpecimensSerializer(serializers.ModelSerializer):
@@ -58,6 +72,21 @@ class SpecimensSerializer(serializers.ModelSerializer):
         return sample
 
 
+class SpecimensSerializerShort(serializers.ModelSerializer):
+    specimens = SampleDataInfoSerializerShort(many=True)
+
+    class Meta:
+        model = SampleInfo
+        fields = ('data_source_id', 'species', 'specimens')
+
+    def create(self, validated_data):
+        specimens_data = validated_data.pop('specimens')
+        sample = SampleInfo.objects.create(**validated_data)
+        for specimen in specimens_data:
+            SampleDataInfo.objects.create(sample=sample, **specimen)
+        return sample
+
+
 class OrganismsSerializer(serializers.ModelSerializer):
     organisms = AnimalInfoSerializer(many=True)
 
@@ -76,6 +105,21 @@ class OrganismsSerializer(serializers.ModelSerializer):
                   'organization_country_ontology', 'description',
                   'person_initial', 'organization_uri', 'publication_doi',
                   'organisms')
+
+    def create(self, validated_data):
+        organisms_data = validated_data.pop('organisms')
+        sample = SampleInfo.objects.create(**validated_data)
+        for organism in organisms_data:
+            AnimalInfo.objects.create(sample=sample, **organism)
+        return sample
+
+
+class OrganismsSerializerShort(serializers.ModelSerializer):
+    organisms = AnimalInfoSerializerShort(many=True)
+
+    class Meta:
+        model = SampleInfo
+        fields = ('data_source_id', 'species', 'organisms')
 
     def create(self, validated_data):
         organisms_data = validated_data.pop('organisms')
