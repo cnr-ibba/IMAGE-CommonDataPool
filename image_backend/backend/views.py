@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, filters
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework.pagination import PageNumberPagination
@@ -16,7 +16,43 @@ class SmallResultsSetPagination(PageNumberPagination):
 
 class ListCreateSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
+    pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['data_source_id', 'alternative_id', 'project',
+                     'submission_title', 'material', 'material_ontology',
+                     'person_last_name', 'person_email', 'person_affiliation',
+                     'person_role', 'person_role_ontology', 'organization_name',
+                     'organization_role', 'organization_role_ontology',
+                     'gene_bank_name', 'gene_bank_country',
+                     'gene_bank_country_ontology', 'data_source_type',
+                     'data_source_version', 'species', 'species_ontology',
+                     'etag', 'submission_description', 'person_first_name',
+                     'organization_address', 'organization_country',
+                     'organization_country_ontology', 'description',
+                     'person_initial', 'organization_uri', 'publication_doi',
+                     'specimens__derived_from',
+                     'specimens__collection_place_accuracy',
+                     'specimens__organism_part',
+                     'specimens__organism_part_ontology',
+                     'specimens__specimen_collection_protocol',
+                     'specimens__collection_date',
+                     'specimens__collection_date_unit',
+                     'specimens__collection_place_latitude',
+                     'specimens__collection_place_latitude_unit',
+                     'specimens__collection_place_longitude',
+                     'specimens__collection_place_longitude_unit',
+                     'specimens__collection_place',
+                     'specimens__developmental_stage',
+                     'specimens__developmental_stage_ontology',
+                     'specimens__physiological_stage',
+                     'specimens__physiological_stage_ontology',
+                     'specimens__availability', 'specimens__sample_storage',
+                     'specimens__sample_storage_processing',
+                     'specimens__animal_age_at_collection',
+                     'specimens__animal_age_at_collection_unit',
+                     'specimens__sampling_to_preparation_interval',
+                     'specimens__sampling_to_preparation_interval_unit']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(specimens__isnull=False)
@@ -34,6 +70,8 @@ class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['species', 'specimens__organism_part']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(specimens__isnull=False)
@@ -87,7 +125,34 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
 
 class ListCreateOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
+    pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['data_source_id', 'alternative_id', 'project',
+                     'submission_title', 'material', 'material_ontology',
+                     'person_last_name', 'person_email', 'person_affiliation',
+                     'person_role', 'person_role_ontology', 'organization_name',
+                     'organization_role', 'organization_role_ontology',
+                     'gene_bank_name', 'gene_bank_country',
+                     'gene_bank_country_ontology', 'data_source_type',
+                     'data_source_version', 'species', 'species_ontology',
+                     'etag', 'submission_description', 'person_first_name',
+                     'organization_address', 'organization_country',
+                     'organization_country_ontology', 'description',
+                     'person_initial', 'organization_uri', 'publication_doi',
+                     'organisms__supplied_breed',
+                     'organisms__efabis_breed_country', 'organisms__sex',
+                     'organisms__sex_ontology',
+                     'organisms__birth_location_accuracy',
+                     'organisms__mapped_breed',
+                     'organisms__mapped_breed_ontology',
+                     'organisms__birth_date', 'organisms__birth_date_unit',
+                     'organisms__birth_location',
+                     'organisms__birth_location_longitude',
+                     'organisms__birth_location_longitude_unit',
+                     'organisms__birth_location_latitude',
+                     'organisms__birth_location_latitude_unit',
+                     'organisms__child_of']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
@@ -105,6 +170,8 @@ class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
