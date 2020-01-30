@@ -70,8 +70,10 @@ class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['species', 'specimens__organism_part']
+    ordering_fields = ['data_source_id', 'species', 'specimens__derived_from',
+                       'specimens__organism_part']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(specimens__isnull=False)
@@ -170,8 +172,10 @@ class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
+    ordering_fields = ['data_source_id', 'species', 'organisms__supplied_breed',
+                       'organisms__sex']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
