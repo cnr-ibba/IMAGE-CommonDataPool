@@ -1,3 +1,6 @@
+import json
+
+from django.http import JsonResponse
 from rest_framework import generics, permissions, filters
 from rest_framework.response import Response
 from rest_framework.views import status
@@ -7,6 +10,64 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import SampleInfo
 from .serializers import SpecimensSerializer, OrganismsSerializer, \
     OrganismsSerializerShort, SpecimensSerializerShort
+
+
+def get_organisms_summary(request):
+    species = dict()
+    breed = dict()
+    sex = dict()
+    species_filter = request.GET.get('species', False)
+    breed_filter = request.GET.get('organisms__supplied_breed', False)
+    sex_filter = request.GET.get('organisms__sex', False)
+    results = SampleInfo.objects.filter(organisms__isnull=False)
+    if species_filter:
+        results = results.filter(species=species_filter)
+    if breed_filter:
+        results = results.filter(organisms__supplied_breed=breed_filter)
+    if sex_filter:
+        results = results.filter(organisms__sex=sex_filter)
+    for record in results:
+        organism = record.organisms.get()
+        species.setdefault(record.species, 0)
+        species[record.species] += 1
+
+        breed.setdefault(organism.supplied_breed, 0)
+        breed[organism.supplied_breed] += 1
+
+        sex.setdefault(organism.sex, 0)
+        sex[organism.sex] += 1
+    return JsonResponse(
+        {
+            'species': species,
+            'breed': breed,
+            'sex': sex
+        }
+    )
+
+
+def get_specimens_summary(request):
+    species = dict()
+    organism_part = dict()
+    species_filter = request.GET.get('species', False)
+    organism_part_filter = request.GET.get('specimens__organism_part', False)
+    results = SampleInfo.objects.filter(specimens__isnull=False)
+    if species_filter:
+        results = results.filter(species=species_filter)
+    if organism_part_filter:
+        results = results.filter(specimens__organism_part=organism_part_filter)
+    for record in results:
+        specimen = record.specimens.get()
+        species.setdefault(record.species, 0)
+        species[record.species] += 1
+
+        organism_part.setdefault(specimen.organism_part, 0)
+        organism_part[specimen.organism_part] += 1
+    return JsonResponse(
+        {
+            'species': species,
+            'organism_part': organism_part
+        }
+    )
 
 
 class SmallResultsSetPagination(PageNumberPagination):
