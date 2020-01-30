@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, filters
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import SampleInfo
 from .serializers import SpecimensSerializer, OrganismsSerializer, \
@@ -70,7 +71,9 @@ class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter,
+                       filters.OrderingFilter]
+    filterset_fields = ['species', 'specimens__organism_part']
     search_fields = ['species', 'specimens__organism_part']
     ordering_fields = ['data_source_id', 'species', 'specimens__derived_from',
                        'specimens__organism_part']
@@ -172,7 +175,10 @@ class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter,
+                       filters.OrderingFilter]
+    filterset_fields = ['species', 'organisms__supplied_breed',
+                        'organisms__sex']
     search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
     ordering_fields = ['data_source_id', 'species', 'organisms__supplied_breed',
                        'organisms__sex']
