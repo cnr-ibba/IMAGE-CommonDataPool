@@ -1,6 +1,6 @@
 import json
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework import generics, permissions, filters
 from rest_framework.response import Response
 from rest_framework.views import status
@@ -26,16 +26,18 @@ def get_organisms_summary(request):
         results = results.filter(organisms__supplied_breed=breed_filter)
     if sex_filter:
         results = results.filter(organisms__sex=sex_filter)
-    for record in results:
-        organism = record.organisms.get()
-        species.setdefault(record.species, 0)
-        species[record.species] += 1
-
-        breed.setdefault(organism.supplied_breed, 0)
-        breed[organism.supplied_breed] += 1
-
-        sex.setdefault(organism.sex, 0)
-        sex[organism.sex] += 1
+    species_names = results.order_by().values_list(
+        'species', flat=True).distinct()
+    breed_names = results.order_by().values_list('organisms__supplied_breed',
+                                                 flat=True).distinct()
+    sex_names = results.order_by().values_list('organisms__sex',
+                                               flat=True).distinct()
+    for name in species_names:
+        species[name] = results.filter(species=name).count()
+    for name in breed_names:
+        breed[name] = results.filter(organisms__supplied_breed=name).count()
+    for name in sex_names:
+        sex[name] = results.filter(organisms__sex=name).count()
     return JsonResponse(
         {
             'species': species,
@@ -55,13 +57,15 @@ def get_specimens_summary(request):
         results = results.filter(species=species_filter)
     if organism_part_filter:
         results = results.filter(specimens__organism_part=organism_part_filter)
-    for record in results:
-        specimen = record.specimens.get()
-        species.setdefault(record.species, 0)
-        species[record.species] += 1
-
-        organism_part.setdefault(specimen.organism_part, 0)
-        organism_part[specimen.organism_part] += 1
+    species_names = results.order_by().values_list('species',
+                                                   flat=True).distinct()
+    organism_part_names = results.order_by().values_list(
+        'specimens__organism_part', flat=True).distinct()
+    for name in species_names:
+        species[name] = results.filter(species=name).count()
+    for name in organism_part_names:
+        organism_part[name] = results.filter(
+            specimens__organism_part=name).count()
     return JsonResponse(
         {
             'species': species,
