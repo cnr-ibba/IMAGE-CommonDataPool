@@ -179,9 +179,10 @@ def specimens_gis_search(request):
                                 specimens__collection_place_longitude='')
     for record in specimens:
         specimen = record.specimens.get()
-        specimen_latitude = convert_to_radians(specimen.birth_location_latitude)
+        specimen_latitude = convert_to_radians(
+            specimen.collection_place_latitude)
         specimen_longitude = convert_to_radians(
-            specimen.birth_location_longitude)
+            specimen.collection_place_longitude)
         if math.acos(math.sin(latitude) * math.sin(specimen_latitude) +
                      math.cos(latitude) * math.cos(specimen_latitude) *
                      math.cos(specimen_longitude - longitude)) * 6371 < radius:
