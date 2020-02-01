@@ -1,4 +1,5 @@
 import json
+import math
 
 from django.http import JsonResponse, HttpResponse
 from rest_framework import generics, permissions, filters
@@ -86,6 +87,37 @@ def get_organisms_graphical_summary(request):
     )
 
 
+def convert_to_radians(degrees):
+    return degrees * 3.14 / 180
+
+
+def organisms_gis_search(request):
+    filter_results = dict()
+    filter_results['results'] = list()
+    latitude = convert_to_radians(int(request.GET.get('latitude', False)))
+    longitude = convert_to_radians(int(request.GET.get('longitude', False)))
+    radius = int(request.GET.get('radius', False))
+    results = SampleInfo.objects.filter(organisms__isnull=False)
+    organisms = results.exclude(organisms__birth_location_longitude='',
+                                organisms__birth_location_latitude='')
+    for record in organisms:
+        organism = record.organisms.get()
+        organism_latitude = convert_to_radians(organism.birth_location_latitude)
+        organism_longitude = convert_to_radians(
+            organism.birth_location_longitude)
+        if math.acos(math.sin(latitude) * math.sin(organism_latitude) +
+                     math.cos(latitude) * math.cos(organism_latitude) *
+                     math.cos(organism_longitude - longitude)) * 6371 < radius:
+            organism_results = {
+                'data_source_id': record.data_source_id,
+                'species': record.species,
+                'supplied_breed': organism.supplied_breed,
+                'sex': organism.sex
+            }
+            filter_results['results'].append(organism_results)
+    return JsonResponse(filter_results)
+
+
 def get_specimens_summary(request):
     species = dict()
     organism_part = dict()
@@ -134,6 +166,33 @@ def get_specimens_graphical_summary(request):
             'coordinates': coordinates
         }
     )
+
+
+def specimens_gis_search(request):
+    filter_results = dict()
+    filter_results['results'] = list()
+    latitude = convert_to_radians(int(request.GET.get('latitude', False)))
+    longitude = convert_to_radians(int(request.GET.get('longitude', False)))
+    radius = int(request.GET.get('radius', False))
+    results = SampleInfo.objects.filter(specimens__isnull=False)
+    specimens = results.exclude(specimens__collection_place_latitude='',
+                                specimens__collection_place_longitude='')
+    for record in specimens:
+        specimen = record.specimens.get()
+        specimen_latitude = convert_to_radians(specimen.birth_location_latitude)
+        specimen_longitude = convert_to_radians(
+            specimen.birth_location_longitude)
+        if math.acos(math.sin(latitude) * math.sin(specimen_latitude) +
+                     math.cos(latitude) * math.cos(specimen_latitude) *
+                     math.cos(specimen_longitude - longitude)) * 6371 < radius:
+            specimen_results = {
+                'data_source_id': record.data_source_id,
+                'species': record.species,
+                'derived_from': specimen.derived_from,
+                'organism_part': specimen.organism_part
+            }
+            filter_results['results'].append(specimen_results)
+    return JsonResponse(filter_results)
 
 
 class SmallResultsSetPagination(PageNumberPagination):
