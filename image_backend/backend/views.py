@@ -47,6 +47,45 @@ def get_organisms_summary(request):
     )
 
 
+def get_organisms_graphical_summary(request):
+    breeds = dict()
+    species = dict()
+    countries = dict()
+    coordinates = list()
+    results = SampleInfo.objects.filter(organisms__isnull=False)
+    species_names = results.order_by().values_list('species',
+                                                   flat=True).distinct()
+    country_names = results.order_by().values_list(
+        'organisms__efabis_breed_country', flat=True).distinct()
+    organisms = results.exclude(organisms__birth_location_longitude='',
+                                organisms__birth_location_latitude='')
+    for name in species_names:
+        species[name] = results.filter(species=name).count()
+        breeds.setdefault(name, dict())
+        tmp = results.filter(species=name)
+        breeds_names = tmp.order_by().values_list('organisms__supplied_breed',
+                                                  flat=True).distinct()
+        for breed_name in breeds_names:
+            breeds[name][breed_name] = tmp.filter(
+                organisms__supplied_breed=breed_name).count()
+    for name in country_names:
+        countries[name] = results.filter(
+            organisms__efabis_breed_country=name).count()
+    for record in organisms:
+        organism = record.organisms.get()
+        coordinates.append((organism.birth_location_longitude,
+                            organism.birth_location_latitude))
+    return JsonResponse(
+
+        {
+            'species': species,
+            'breeds': breeds,
+            'countries': countries,
+            'coordinates': coordinates
+        }
+    )
+
+
 def get_specimens_summary(request):
     species = dict()
     organism_part = dict()
@@ -70,6 +109,29 @@ def get_specimens_summary(request):
         {
             'species': species,
             'organism_part': organism_part
+        }
+    )
+
+
+def get_specimens_graphical_summary(request):
+    coordinates = list()
+    organism_part = dict()
+    results = SampleInfo.objects.filter(specimens__isnull=False)
+    organism_part_names = results.order_by().values_list(
+        'specimens__organism_part', flat=True).distinct()
+    specimens = results.exclude(specimens__collection_place_latitude='',
+                                specimens__collection_place_longitude='')
+    for name in organism_part_names:
+        organism_part[name] = results.filter(
+            specimens__organism_part=name).count()
+    for record in specimens:
+        specimen = record.specimens.get()
+        coordinates.append((specimen.collection_place_longitude,
+                            specimen.collection_place_latitude))
+    return JsonResponse(
+        {
+            'organism_part': organism_part,
+            'coordinates': coordinates
         }
     )
 
