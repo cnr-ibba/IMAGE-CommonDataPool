@@ -94,9 +94,9 @@ def convert_to_radians(degrees):
 def organisms_gis_search(request):
     filter_results = dict()
     filter_results['results'] = list()
-    latitude = convert_to_radians(int(request.GET.get('latitude', False)))
-    longitude = convert_to_radians(int(request.GET.get('longitude', False)))
-    radius = int(request.GET.get('radius', False))
+    latitude = convert_to_radians(float(request.GET.get('latitude', False)))
+    longitude = convert_to_radians(float(request.GET.get('longitude', False)))
+    radius = float(request.GET.get('radius', False))
     results = SampleInfo.objects.filter(organisms__isnull=False)
     organisms = results.exclude(organisms__birth_location_longitude='',
                                 organisms__birth_location_latitude='')
@@ -171,9 +171,9 @@ def get_specimens_graphical_summary(request):
 def specimens_gis_search(request):
     filter_results = dict()
     filter_results['results'] = list()
-    latitude = convert_to_radians(int(request.GET.get('latitude', False)))
-    longitude = convert_to_radians(int(request.GET.get('longitude', False)))
-    radius = int(request.GET.get('radius', False))
+    latitude = convert_to_radians(float(request.GET.get('latitude', False)))
+    longitude = convert_to_radians(float(request.GET.get('longitude', False)))
+    radius = float(request.GET.get('radius', False))
     results = SampleInfo.objects.filter(specimens__isnull=False)
     specimens = results.exclude(specimens__collection_place_latitude='',
                                 specimens__collection_place_longitude='')
