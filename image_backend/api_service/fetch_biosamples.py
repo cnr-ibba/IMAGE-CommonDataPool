@@ -27,10 +27,14 @@ def fetch_biosamples():
     # Get rules
     standard_rules, organism_rules, specimen_rules = get_ruleset()
     etags = read_etags()
+    samples = list()
 
     results = requests.get('https://www.ebi.ac.uk/biosamples/samples'
-                           '?size=1000000&filter=attr:project:IMAGE').json()
-    samples = results['_embedded']['samples']
+                           '?size=10000&filter=attr:project:IMAGE').json()
+    while 'next' in results['_links']:
+        samples.extend(results['_embedded']['samples'])
+        results = requests.get(results['_links']['next']['href']).json()
+    samples.extend(results['_embedded']['samples'])
     organisms = list()
     specimens = list()
     for sample in samples:

@@ -14,6 +14,8 @@ urlpatterns = [
          name='organism_graphical_summary'),
     path('organism/gis_search/', views.organisms_gis_search,
          name='organism_gis_search'),
+    path('organism/download/', views.download_organism_data,
+         name='organism_download'),
     path('organism/<organism_id>/', views.OrganismsDetailsView.as_view(),
          name='organismdetail'),
     path('specimen/', views.ListCreateSpecimensView.as_view(),
@@ -26,6 +28,8 @@ urlpatterns = [
          name='specimens_graphical_summary'),
     path('specimen/gis_search/', views.specimens_gis_search,
          name='specimen_gis_search'),
+    path('specimen/download/', views.download_specimen_data,
+         name='specimen_download'),
     path('specimen/<specimen_id>/', views.SpecimensDetailsView.as_view(),
          name='specimendetail')
 ]

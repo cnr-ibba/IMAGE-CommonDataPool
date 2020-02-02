@@ -118,6 +118,28 @@ def organisms_gis_search(request):
     return JsonResponse(filter_results)
 
 
+def download_organism_data(request):
+    data_to_download = 'Data source ID\tSpecies\tSupplied breed\tSex\n'
+    species_filter = request.GET.get('species', False)
+    breed_filter = request.GET.get('organisms__supplied_breed', False)
+    sex_filter = request.GET.get('organisms__sex', False)
+    results = SampleInfo.objects.filter(organisms__isnull=False)
+    if species_filter:
+        results = results.filter(species=species_filter)
+    if breed_filter:
+        results = results.filter(organisms__supplied_breed=breed_filter)
+    if sex_filter:
+        results = results.filter(organisms__sex=sex_filter)
+    for record in results:
+        organism = record.organisms.get()
+        data_to_download += f'{record.data_source_id}\t{record.species}\t' \
+                            f'{organism.supplied_breed}\t{organism.sex}\n'
+    response = HttpResponse(data_to_download, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="IMAGE_organisms' \
+                                      '.txt"'
+    return response
+
+
 def get_specimens_summary(request):
     species = dict()
     organism_part = dict()
@@ -194,6 +216,26 @@ def specimens_gis_search(request):
             }
             filter_results['results'].append(specimen_results)
     return JsonResponse(filter_results)
+
+
+def download_specimen_data(request):
+    data_to_download = 'Data source ID\tSpecies\tDerived from\tOrganism part\n'
+    species_filter = request.GET.get('species', False)
+    organism_part_filter = request.GET.get('specimens__organism_part', False)
+    results = SampleInfo.objects.filter(specimens__isnull=False)
+    if species_filter:
+        results = results.filter(species=species_filter)
+    if organism_part_filter:
+        results = results.filter(specimens__organism_part=organism_part_filter)
+    for record in results:
+        specimen = record.specimens.get()
+        data_to_download += f'{record.data_source_id}\t{record.species}\t' \
+                            f'{specimen.derived_from}\t' \
+                            f'{specimen.organism_part}\n'
+    response = HttpResponse(data_to_download, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="IMAGE_specimens' \
+                                      '.txt"'
+    return response
 
 
 class SmallResultsSetPagination(PageNumberPagination):

@@ -106,7 +106,7 @@ def read_cdp_etags(records_type):
     """
     cdp_etags = dict()
     response = requests.get(f"{BACKEND_URL}/{records_type}").json()
-    for record in response:
+    for record in response['results']:
         cdp_etags[record['data_source_id']] = record['etag']
     return cdp_etags
 
