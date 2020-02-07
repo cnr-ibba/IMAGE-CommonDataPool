@@ -93,6 +93,24 @@ class SampleInfo(models.Model):
     publication_doi = models.CharField(max_length=100, blank=True)
 
 
+class Files(models.Model):
+    # Specimen BioSample id
+    data_source_id = models.CharField(max_length=100, primary_key=True)
+    # Fields for vcf
+    file_name = models.CharField(max_length=100)
+    file_url = models.CharField(max_length=100)
+    file_size = models.CharField(max_length=100)
+    file_checksum = models.CharField(max_length=100)
+    file_checksum_method = models.CharField(max_length=100)
+
+    # Fields for tabix indices
+    file_index_name = models.CharField(max_length=100)
+    file_index_url = models.CharField(max_length=100)
+    file_index_size = models.CharField(max_length=100)
+    file_index_checksum = models.CharField(max_length=100)
+    file_index_checksum_method = models.CharField(max_length=100)
+
+
 class AnimalInfo(models.Model):
     # mandatory
     sample = models.ForeignKey(SampleInfo, related_name="organisms",
