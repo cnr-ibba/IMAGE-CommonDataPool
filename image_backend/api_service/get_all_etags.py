@@ -38,7 +38,7 @@ async def fetch_etag(session, my_id):
 
 def fetch_biosample_ids():
     return requests.get("https://www.ebi.ac.uk/biosamples/accessions?"
-                        "project=IMAGE&limit=100000").json()
+                        "size=100000&filter=attr:project:IMAGE").json()
 
 
 if __name__ == "__main__":
