@@ -8,9 +8,9 @@ from rest_framework.views import status
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SampleInfo
+from .models import SampleInfo, Files
 from .serializers import SpecimensSerializer, OrganismsSerializer, \
-    OrganismsSerializerShort, SpecimensSerializerShort
+    OrganismsSerializerShort, SpecimensSerializerShort, FilesSerializer
 
 
 def get_organisms_summary(request):
@@ -462,3 +462,19 @@ class OrganismsDetailsView(generics.RetrieveAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class ListCreateFilesView(generics.ListCreateAPIView):
+    serializer_class = FilesSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def get_queryset(self):
+        return Files.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        serializer = FilesSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=ValueError):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.error_messages,
+                        status=status.HTTP_400_BAD_REQUEST)

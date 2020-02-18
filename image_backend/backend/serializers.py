@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from .models import SampleInfo, AnimalInfo, SampleDataInfo
+from .models import SampleInfo, AnimalInfo, SampleDataInfo, Files
+
+
+class FilesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Files
+        fields = ('data_source_id', 'file_name', 'file_url', 'file_size',
+                  'file_checksum', 'file_checksum_method', 'file_index_name',
+                  'file_index_url', 'file_index_size', 'file_index_checksum',
+                  'file_index_checksum_method')
 
 
 class SampleDataInfoSerializer(serializers.ModelSerializer):
