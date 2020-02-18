@@ -105,8 +105,8 @@ def read_cdp_etags(records_type):
     :return: dict with etags
     """
     cdp_etags = dict()
-    response = requests.get(
-        f"{BACKEND_URL}/{records_type}/?page_size=10000").json()
+    response = requests.get(f"{BACKEND_URL}/{records_type}/"
+                            f"?page_size=10000&ordering=data_source_id").json()
     while response['next'] is not None:
         for record in response['results']:
             cdp_etags[record['data_source_id']] = record['etag']
