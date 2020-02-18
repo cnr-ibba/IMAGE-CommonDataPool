@@ -248,7 +248,7 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
@@ -283,6 +283,7 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
                      'specimens__animal_age_at_collection_unit',
                      'specimens__sampling_to_preparation_interval',
                      'specimens__sampling_to_preparation_interval_unit']
+    ordering_fields = ['data_source_id']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(specimens__isnull=False)
@@ -361,7 +362,7 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
@@ -387,6 +388,7 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
                      'organisms__birth_location_latitude',
                      'organisms__birth_location_latitude_unit',
                      'organisms__child_of']
+    ordering_fields = ['data_source_id']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
