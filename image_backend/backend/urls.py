@@ -32,5 +32,6 @@ urlpatterns = [
          name='specimen_download'),
     path('specimen/<specimen_id>/', views.SpecimensDetailsView.as_view(),
          name='specimendetail'),
-    path('file/', views.ListCreateFilesView.as_view(), name='fileindex')
+    path('file/', views.ListCreateFilesView.as_view(), name='fileindex'),
+    path('file/download/')
 ]

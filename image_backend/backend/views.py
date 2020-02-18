@@ -487,3 +487,16 @@ class ListCreateFilesView(generics.ListCreateAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.error_messages,
                         status=status.HTTP_400_BAD_REQUEST)
+
+
+def download_file_data(request):
+    data_to_download = 'Data source ID\tFile name\tFile size\tFile index\t' \
+                       'File index size\n'
+    results = Files.objects.all()
+    for record in results:
+        data_to_download += f'{record.data_source_id}\t{record.file_name}\t' \
+                            f'{record.file_size}\t{record.file_index_name}\t' \
+                            f'{record.file_index_size}\n'
+    response = HttpResponse(data_to_download, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="IMAGE_files.txt'
+    return response
