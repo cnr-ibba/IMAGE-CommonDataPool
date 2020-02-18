@@ -244,6 +244,12 @@ class SmallResultsSetPagination(PageNumberPagination):
     max_page_size = 1000000
 
 
+class LargeResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000000
+
+
 class ListCreateSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
     pagination_class = SmallResultsSetPagination
@@ -466,7 +472,7 @@ class OrganismsDetailsView(generics.RetrieveAPIView):
 
 class ListCreateFilesView(generics.ListCreateAPIView):
     serializer_class = FilesSerializer
-    pagination_class = SmallResultsSetPagination
+    pagination_class = LargeResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['data_source_id', 'file_name']
