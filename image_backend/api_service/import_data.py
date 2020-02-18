@@ -1,9 +1,10 @@
 import json
 import requests
-import sys
+from decouple import config
 from datetime import date
 
 BACKEND_URL = 'https://www.image2020genebank.eu/data_portal/backend'
+IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 
 
 def import_data():
@@ -21,11 +22,11 @@ def import_data():
         for organism in organisms_data:
             requests.post(
                 f'{BACKEND_URL}/organism/', json=organism,
-                auth=('admin', sys.argv[1]))
+                auth=('admin', IMPORT_PASSWORD))
         for specimen in specimens_data:
             requests.post(
                 f'{BACKEND_URL}/specimen/', json=specimen,
-                auth=('admin', sys.argv[1]))
+                auth=('admin', IMPORT_PASSWORD))
         return
 
     for biosample_id, etag in biosample_etags.items():
@@ -52,14 +53,14 @@ def add_single_record(biosample_id, organisms_data=None, specimens_data=None):
             if record['data_source_id'] == biosample_id:
                 response = requests.post(
                     f'{BACKEND_URL}/organism/', json=record,
-                    auth=('admin', sys.argv[1]))
+                    auth=('admin', IMPORT_PASSWORD))
 
     if specimens_data is not None:
         for record in specimens_data:
             if record['data_source_id'] == biosample_id:
                 response = requests.post(
                     f'{BACKEND_URL}/specimen/', json=record,
-                    auth=('admin', sys.argv[1]))
+                    auth=('admin', IMPORT_PASSWORD))
 
 
 def update_organism_record(biosample_id, organisms_data):
@@ -69,7 +70,7 @@ def update_organism_record(biosample_id, organisms_data):
     :param organisms_data: file with organisms data
     """
     response = requests.delete(f"{BACKEND_URL}/organism/{biosample_id}",
-                               auth=('admin', sys.argv[1]))
+                               auth=('admin', IMPORT_PASSWORD))
     add_single_record(biosample_id, organisms_data=organisms_data)
 
 
