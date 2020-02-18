@@ -500,3 +500,41 @@ def download_file_data(request):
     response = HttpResponse(data_to_download, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="IMAGE_files.txt'
     return response
+
+
+class FilesDetailsView(generics.RetrieveAPIView):
+    queryset = Files.objects.all()
+    serializer_class = FilesSerializer
+
+    def get(self, request, *a, **kw):
+        try:
+            file = self.queryset.get(data_source_id=kw['specimen_id'])
+            return Response(FilesSerializer(file).data)
+        except:
+            return Response(
+                data={
+                    "message": "File with id: {} does not exist".format(
+                        kw['specimen_id'])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def delete(self, request, *a, **kw):
+        try:
+            file = self.queryset.get(data_source_id=kw['specimen_id'])
+            file.delete()
+            return Response(
+                data={
+                    "message": "Specimen with id: {} was deleted".format(
+                        kw['specimen_id'])
+                },
+                status=status.HTTP_202_ACCEPTED
+            )
+        except:
+            return Response(
+                data={
+                    "message": "Specimen with id: {} does not exist".format(
+                        kw['specimen_id'])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
