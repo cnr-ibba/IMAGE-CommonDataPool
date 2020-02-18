@@ -1,7 +1,6 @@
 import click
 import requests
 from decouple import config
-import json
 
 # the pattern used in the Project Title in EVA submission to identify IMAGE
 # related genotype data

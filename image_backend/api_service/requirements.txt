@@ -1,0 +1,5 @@
+aiohttp
+asyncio
+requests
+python-decouple
+click
