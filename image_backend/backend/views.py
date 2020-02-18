@@ -466,7 +466,10 @@ class OrganismsDetailsView(generics.RetrieveAPIView):
 
 class ListCreateFilesView(generics.ListCreateAPIView):
     serializer_class = FilesSerializer
+    pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['data_source_id', 'file_name']
 
     def get_queryset(self):
         return Files.objects.all()
