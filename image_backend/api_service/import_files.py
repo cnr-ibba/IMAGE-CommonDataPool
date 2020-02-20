@@ -94,27 +94,13 @@ def main(result_type):
     for biosample_id, data in results.items():
         tmp = dict()
         tmp['data_source_id'] = biosample_id
-        file_index, tabix_index = get_name_indices(data['fileNames'])
-        tmp['file_name'] = data['fileNames'][file_index]
-        tmp['file_url'] = data['urls'][file_index]
-        tmp['file_size'] = data['fileSizes'][file_index]
-        tmp['file_checksum'] = data['checksums'][file_index]
-        tmp['file_checksum_method'] = data['checksumMethods'][file_index]
-
-        tmp['file_index_name'] = data['fileNames'][tabix_index]
-        tmp['file_index_url'] = data['urls'][tabix_index]
-        tmp['file_index_size'] = data['fileSizes'][tabix_index]
-        tmp['file_index_checksum'] = data['checksums'][tabix_index]
-        tmp['file_index_checksum_method'] = data['checksumMethods'][tabix_index]
+        tmp['file_name'] = data['fileNames']
+        tmp['file_url'] = data['urls']
+        tmp['file_size'] = data['fileSizes']
+        tmp['file_checksum'] = data['checksums']
+        tmp['file_checksum_method'] = data['checksumMethods']
         requests.post(f'{BACKEND_URL}/file/', json=tmp,
                       auth=('admin', IMPORT_PASSWORD))
-
-
-def get_name_indices(file_names):
-    if 'tbi' in file_names[0]:
-        return 1, 0
-    else:
-        return 0, 1
 
 
 def parse_into_specimen(record, results):
