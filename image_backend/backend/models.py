@@ -96,19 +96,12 @@ class SampleInfo(models.Model):
 class Files(models.Model):
     # Specimen BioSample id
     data_source_id = models.CharField(max_length=1000, primary_key=True)
-    # Fields for vcf
-    file_name = models.CharField(max_length=1000)
-    file_url = models.CharField(max_length=1000)
-    file_size = models.CharField(max_length=1000)
-    file_checksum = models.CharField(max_length=1000)
-    file_checksum_method = models.CharField(max_length=1000)
 
-    # Fields for tabix indices
-    file_index_name = models.CharField(max_length=1000)
-    file_index_url = models.CharField(max_length=1000)
-    file_index_size = models.CharField(max_length=1000)
-    file_index_checksum = models.CharField(max_length=1000)
-    file_index_checksum_method = models.CharField(max_length=1000)
+    file_name = ArrayField(models.CharField(max_length=1000))
+    file_url = ArrayField(models.CharField(max_length=1000))
+    file_size = ArrayField(models.CharField(max_length=1000))
+    file_checksum = ArrayField(models.CharField(max_length=1000))
+    file_checksum_method = ArrayField(models.CharField(max_length=1000))
 
 
 class AnimalInfo(models.Model):
