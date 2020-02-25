@@ -42,7 +42,7 @@ class AnimalInfoSerializer(serializers.ModelSerializer):
                   'mapped_breed_ontology', 'birth_date', 'birth_date_unit',
                   'birth_location', 'birth_location_longitude',
                   'birth_location_longitude_unit', 'birth_location_latitude',
-                  'birth_location_latitude_unit', 'child_of')
+                  'birth_location_latitude_unit', 'child_of', 'specimens')
 
 
 class AnimalInfoSerializerShort(serializers.ModelSerializer):
