@@ -130,6 +130,8 @@ class AnimalInfo(models.Model):
     # optional
     child_of = ArrayField(models.CharField(max_length=1000, blank=True),
                           size=2, blank=True)
+    specimens = ArrayField(models.CharField(max_length=1000, blank=True),
+                           blank=True)
 
 
 class SampleDataInfo(models.Model):

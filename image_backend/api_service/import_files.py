@@ -4,8 +4,7 @@ from decouple import config
 
 # the pattern used in the Project Title in EVA submission to identify IMAGE
 # related genotype data
-# IMAGE_TAG = 'IMAGE project:'
-IMAGE_TAG = 'Recombination'
+IMAGE_TAG = 'IMAGE project:'
 SPECIMEN = 'specimen'
 ANALYSIS = 'analysis'
 # the column list to retrieve data from ENA
