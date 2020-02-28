@@ -13,11 +13,16 @@ $ docker-compose run --rm djangoapp python manage.py migrate
 
 $ docker-compose run --rm djangoapp python manage.py makemigrations
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py migrate"```
+$ docker-compose run --rm djangoapp python manage.py migrate
+
+$ docker-compose run --rm djangoapp python manage.py collectstatic
+```
 
 Create superuser:
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py createsuperuser --email {your email} --username admin"```
+```
+$ docker-compose run --rm djangoapp python manage.py createsuperuser --email {your email} --username admin
+```
 
 Start app:
 

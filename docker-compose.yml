@@ -4,6 +4,8 @@ services:
 
   supercronic:
     build: ./supercronic/.
+    env_file:
+      - .env
     links:
       - nginx
     volumes:
@@ -14,6 +16,8 @@ services:
 
   djangoapp:
     build: ./djangoapp/
+    env_file:
+      - .env
     volumes:
       - ./image_backend/:/code/
     networks:
@@ -23,22 +27,21 @@ services:
       - database1
 
   nginx:
-    image: nginx:1.13
+    image: nginx:1.17
     ports:
       - 26081:80
     volumes:
-      - ./config/nginx/conf.d:/etc/nginx/conf.d
-      - static_volume:/code/static  # <-- bind the static volume
-      - media_volume:/code/media  # <-- bind the media volume
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./image_backend/:/code/
     depends_on:
       - djangoapp
     networks:
       - nginx_network
 
   database1:  # <-- IMPORTANT: same name as in DATABASES setting, otherwise Django won't find the database!
-    image: postgres:10
-    env_file:  # <-- we use the previously defined values
-      - ./.env
+    image: postgres:10.12
+    env_file:
+      - .env
     networks:  # <-- connect to the bridge
       - database1_network
     volumes:
@@ -52,5 +55,3 @@ networks:
 
 volumes:
   database1_volume:
-  static_volume:
-  media_volume:
