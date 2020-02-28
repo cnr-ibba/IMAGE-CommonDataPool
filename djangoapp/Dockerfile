@@ -7,4 +7,4 @@
  RUN pip install -r requirements.txt
 
  EXPOSE 8000
- CMD ["gunicorn", "--bind", ":8000", "api_service.wsgi:application"]
+ CMD ["gunicorn", "--bind", ":8000", "--access-logfile", "-", "--workers", "2", "api_service.wsgi:application"]
