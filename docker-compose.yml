@@ -13,11 +13,9 @@ services:
       - nginx_network
 
   djangoapp:
-    build: .
+    build: ./djangoapp/
     volumes:
-      - .:/code
-      - static_volume:/code/static  # <-- bind the static volume
-      - media_volume:/code/media  # <-- bind the media volume
+      - ./image_backend/:/code/
     networks:
       - nginx_network
       - database1_network  # <-- connect to the bridge
