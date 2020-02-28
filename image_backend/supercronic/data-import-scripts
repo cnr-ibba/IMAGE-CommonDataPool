@@ -1,0 +1,6 @@
+# exec jobs: need to import data after downloading them
+00 01 * * * python /code/scripts/get_all_etags.py && python /code/scripts/import_data.py
+00 02 * * * python /code/scripts/fetch_biosamples.py && python /code/scripts/import_files.py
+
+# test supercronic
+*/5 * * * * echo "hello from Supercronic"

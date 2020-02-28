@@ -3,7 +3,7 @@ import requests
 from decouple import config
 from datetime import date
 
-BACKEND_URL = 'https://www.image2020genebank.eu/data_portal/backend'
+BACKEND_URL = 'http://nginx/data_portal/backend'
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 
 

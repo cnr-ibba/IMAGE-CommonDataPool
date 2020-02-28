@@ -4,7 +4,7 @@ from decouple import config
 
 # the pattern used in the Project Title in EVA submission to identify IMAGE
 # related genotype data
-IMAGE_TAG = 'IMAGE project:'
+IMAGE_TAG = ''  #'IMAGE project:'
 SPECIMEN = 'specimen'
 ANALYSIS = 'analysis'
 # the column list to retrieve data from ENA
@@ -18,7 +18,7 @@ FIELD_LIST = [
     "description", "germline"
 ]
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
-BACKEND_URL = 'https://www.image2020genebank.eu/data_portal/backend'
+BACKEND_URL = 'http://nginx/data_portal/backend'
 
 
 @click.command()

@@ -2,8 +2,15 @@ version: '3'
 
 services:
 
-  crontab:
-    build: ./api_service/.
+  supercronic:
+    build: ./supercronic/.
+    links:
+      - nginx
+    volumes:
+      - ./supercronic/scripts/:/code/scripts/
+      - ./data/:/code/data/
+    networks:
+      - nginx_network
 
   djangoapp:
     build: .
