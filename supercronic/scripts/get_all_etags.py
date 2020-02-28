@@ -44,6 +44,6 @@ def fetch_biosample_ids():
 if __name__ == "__main__":
     main()
     today = date.today().strftime('%Y-%m-%d')
-    with open(f"etag_list_{today}.txt", 'w') as w:
+    with open(f"etag_list_{today}.csv", 'w') as w:
         for item in sorted(ETAG):
             w.write(item + "\n")

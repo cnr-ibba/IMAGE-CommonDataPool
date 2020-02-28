@@ -95,7 +95,7 @@ def read_etags():
     """
     results_to_return = dict()
     today = date.today().strftime('%Y-%m-%d')
-    with open(f"etag_list_{today}.txt", 'r') as f:
+    with open(f"etag_list_{today}.csv", 'r') as f:
         for line in f:
             line = line.rstrip()
             data = line.split("\t")

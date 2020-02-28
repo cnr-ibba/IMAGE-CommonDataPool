@@ -91,7 +91,7 @@ def read_biosample_etags():
     """
     today = date.today().strftime('%Y-%m-%d')
     biosample_etags = dict()
-    with open(f"etag_list_{today}.txt", 'r') as f:
+    with open(f"etag_list_{today}.csv", 'r') as f:
         for line in f:
             line = line.rstrip()
             data = line.split("\t")

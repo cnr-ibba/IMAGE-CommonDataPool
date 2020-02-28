@@ -27,11 +27,11 @@ RUN mkdir -p /code/scripts/
 RUN mkdir -p /code/data/
 
 # set working dir
-WORKDIR /code
+WORKDIR /code/data
 
 # install required packages
 COPY ./requirements.txt /code
-RUN pip install -r requirements.txt
+RUN pip install -r /code/requirements.txt
 
 # define a volume in which I could find scripts
 VOLUME /code/scripts/
