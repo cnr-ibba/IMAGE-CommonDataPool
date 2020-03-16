@@ -15,9 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import HttpResponseRedirect
 
 urlpatterns = [
-    path('data_portal/', admin.site.urls),
+    path('data_portal/', lambda v: HttpResponseRedirect('data_portal/admin/')),
     path('data_portal/admin/', admin.site.urls),
     path('data_portal/backend/', include('backend.urls')),
     path('data_portal/api-auth/', include('rest_framework.urls')),
