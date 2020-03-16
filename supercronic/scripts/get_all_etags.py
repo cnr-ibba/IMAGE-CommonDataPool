@@ -7,7 +7,7 @@ ETAG_IDS = []
 
 
 def main():
-    biosample_ids = fetch_biosample_ids()
+    biosample_ids = fetch_biosample_ids()['_embedded']['accessions']
     asyncio.get_event_loop().run_until_complete(fetch_all_etags(biosample_ids))
     if len(biosample_ids) != len(ETAG_IDS):
         for my_id in biosample_ids:
