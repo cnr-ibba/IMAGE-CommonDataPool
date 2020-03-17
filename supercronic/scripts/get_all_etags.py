@@ -1,7 +1,10 @@
 import aiohttp
 import asyncio
 import requests
-from datetime import date
+
+from common import rotate_file, ETAG_FILE
+
+# Global variables
 ETAG = []
 ETAG_IDS = []
 
@@ -42,8 +45,13 @@ def fetch_biosample_ids():
 
 
 if __name__ == "__main__":
+    # rotating files
+    rotate_file(ETAG_FILE)
+
+    # downloading etags from biosamples
     main()
-    today = date.today().strftime('%Y-%m-%d')
-    with open(f"etag_list_{today}.csv", 'w') as w:
+
+    # now write into output files
+    with open(ETAG_FILE, 'w') as w:
         for item in sorted(ETAG):
             w.write(item + "\n")

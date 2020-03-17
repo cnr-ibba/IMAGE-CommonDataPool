@@ -1,7 +1,8 @@
 import json
 import requests
 from decouple import config
-from datetime import date
+
+from common import ETAG_FILE
 
 BACKEND_URL = 'http://nginx/data_portal/backend'
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
@@ -89,9 +90,10 @@ def read_biosample_etags():
     This function will read etags from BioSamples
     :return: dict with etags
     """
-    today = date.today().strftime('%Y-%m-%d')
+
     biosample_etags = dict()
-    with open(f"etag_list_{today}.csv", 'r') as f:
+
+    with open(ETAG_FILE, 'r') as f:
         for line in f:
             line = line.rstrip()
             data = line.split("\t")
