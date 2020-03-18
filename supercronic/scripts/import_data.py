@@ -1,9 +1,10 @@
 import json
 import requests
 from decouple import config
-from datetime import date
 
-BACKEND_URL = 'https://www.image2020genebank.eu/data_portal/backend'
+from common import ETAG_FILE
+
+BACKEND_URL = 'http://nginx/data_portal/backend'
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 
 
@@ -89,9 +90,10 @@ def read_biosample_etags():
     This function will read etags from BioSamples
     :return: dict with etags
     """
-    today = date.today().strftime('%Y-%m-%d')
+
     biosample_etags = dict()
-    with open(f"etag_list_{today}.txt", 'r') as f:
+
+    with open(ETAG_FILE, 'r') as f:
         for line in f:
             line = line.rstrip()
             data = line.split("\t")

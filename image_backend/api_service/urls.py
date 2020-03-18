@@ -14,10 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, reverse
+from django.http import HttpResponseRedirect
 
 urlpatterns = [
-    path('data_portal/', admin.site.urls),
+    path(
+        'data_portal/',
+        lambda v: HttpResponseRedirect(reverse('admin:index'))
+    ),
     path('data_portal/admin/', admin.site.urls),
     path('data_portal/backend/', include('backend.urls')),
     path('data_portal/api-auth/', include('rest_framework.urls')),

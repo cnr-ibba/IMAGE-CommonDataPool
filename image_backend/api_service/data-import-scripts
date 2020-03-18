@@ -1,4 +1,0 @@
-00 01 * * * source $SOURCE_PYTHON3; python /code/get_all_etags.py
-00 02 * * * source $SOURCE_PYTHON3; python /code/fetch_biosamples.py
-00 03 * * * source $SOURCE_PYTHON3; python /code/import_data.py
-00 04 * * * source $SOURCE_PYTHON3; python /code/import_files.py

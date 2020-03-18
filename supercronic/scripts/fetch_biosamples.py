@@ -1,7 +1,8 @@
 import requests
 import json
 import logging
-from datetime import date
+
+from common import rotate_file, ETAG_FILE, FETCH_BIOSAMPLE_LOG_FILE
 
 SAMPLE_RULESET_URL = 'https://raw.githubusercontent.com/cnr-ibba/' \
                      'IMAGE-metadata/master/rulesets/sample_ruleset.json'
@@ -16,8 +17,7 @@ def fetch_biosamples():
     Main function to fet data from biosamples
     """
     new_logger = logging.getLogger('fetch_biosamples')
-    today = date.today().strftime('%Y-%m-%d')
-    f_handler = logging.FileHandler(f"fetch_biosamples_{today}.log")
+    f_handler = logging.FileHandler(FETCH_BIOSAMPLE_LOG_FILE)
     f_format = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - line %(lineno)s - '
         '%(message)s', datefmt='%y-%b-%d %H:%M:%S')
@@ -94,8 +94,8 @@ def read_etags():
     :return: dict with biosample ids as keys and etags as values
     """
     results_to_return = dict()
-    today = date.today().strftime('%Y-%m-%d')
-    with open(f"etag_list_{today}.txt", 'r') as f:
+
+    with open(ETAG_FILE, 'r') as f:
         for line in f:
             line = line.rstrip()
             data = line.split("\t")
@@ -262,8 +262,13 @@ def convert_to_underscores(name):
 
 
 if __name__ == "__main__":
+    # rotating files
+    rotate_file(FETCH_BIOSAMPLE_LOG_FILE)
+
     organisms, specimens = fetch_biosamples()
+
     with open('organisms.json', 'w') as outfile:
         json.dump(organisms, outfile)
+
     with open('specimens.json', 'w') as outfile:
         json.dump(specimens, outfile)

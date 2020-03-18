@@ -18,7 +18,7 @@ FIELD_LIST = [
     "description", "germline"
 ]
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
-BACKEND_URL = 'https://www.image2020genebank.eu/data_portal/backend'
+BACKEND_URL = 'http://nginx/data_portal/backend'
 
 
 @click.command()

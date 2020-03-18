@@ -1,13 +1,16 @@
 import aiohttp
 import asyncio
 import requests
-from datetime import date
+
+from common import rotate_file, ETAG_FILE
+
+# Global variables
 ETAG = []
 ETAG_IDS = []
 
 
 def main():
-    biosample_ids = fetch_biosample_ids()
+    biosample_ids = fetch_biosample_ids()['_embedded']['accessions']
     asyncio.get_event_loop().run_until_complete(fetch_all_etags(biosample_ids))
     if len(biosample_ids) != len(ETAG_IDS):
         for my_id in biosample_ids:
@@ -42,8 +45,13 @@ def fetch_biosample_ids():
 
 
 if __name__ == "__main__":
+    # rotating files
+    rotate_file(ETAG_FILE)
+
+    # downloading etags from biosamples
     main()
-    today = date.today().strftime('%Y-%m-%d')
-    with open(f"etag_list_{today}.txt", 'w') as w:
+
+    # now write into output files
+    with open(ETAG_FILE, 'w') as w:
         for item in sorted(ETAG):
             w.write(item + "\n")

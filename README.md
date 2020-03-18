@@ -1,22 +1,29 @@
 # IMAGE-CommonDataPool
+
 IMAGE Common Data Pool - PostgreSQL, metadata structure and data loading scripts
 
-# Runing app
+## Runing app
 
 
-Make migrations:
+Make migrations and copy static files into media dir:
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py check"```
+```
+$ docker-compose run --rm djangoapp python manage.py check
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py migrate"```
+$ docker-compose run --rm djangoapp python manage.py migrate
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py makemigrations"```
+$ docker-compose run --rm djangoapp python manage.py makemigrations
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py migrate"```
+$ docker-compose run --rm djangoapp python manage.py migrate
+
+$ docker-compose run --rm djangoapp python manage.py collectstatic
+```
 
 Create superuser:
 
-```sudo docker-compose run --rm djangoapp /bin/bash -c "./manage.py createsuperuser --email {your email} --username admin"```
+```
+$ docker-compose run --rm djangoapp python manage.py createsuperuser --email {your email} --username admin
+```
 
 Start app:
 
@@ -34,11 +41,9 @@ Stop app:
 
 # Special notes about links to dad-is interface
 
-Currently it seems to be impossible to generate links to dad-is automatically, 
+Currently it seems to be impossible to generate links to dad-is automatically,
 as dad-is is using common names for species and not official names, also some
 breeds might have different naming. So we should keep all dad-is names that
 are currently in data portal in DAD_IS_BREEDS constant inside fetch_biosamples
 script. Script will daily generate log file with all links that couldn't be
 generated automatically.
-
- 

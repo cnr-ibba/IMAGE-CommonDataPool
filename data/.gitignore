@@ -1,0 +1,6 @@
+# ignoring data files
+*.csv
+*.json
+
+# ignoring backup files
+*.[0-9]*
