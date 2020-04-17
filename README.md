@@ -27,17 +27,41 @@ $ docker-compose run --rm djangoapp python manage.py createsuperuser --email {yo
 
 Start app:
 
-```sudo docker-compose up -d```
-
-Upload BioSamples data:
-
-```python ./api-service/fetch_biosamples.py```
-
-```python ./api-service/import_data.py {admin password}```
+```
+$ docker-compose up -d
+```
 
 Stop app:
 
-```docker-compose down```
+```
+$ docker-compose down
+```
+
+# Upload BioSamples data
+
+first enter into supercronic container with:
+
+```
+$ docker-compose exec supercronic /bin/bash
+```
+
+Then, inside the container execute:
+
+```
+$ python /code/scripts/get_all_etags.py && python /code/scripts/fetch_biosamples.py && python /code/scripts/import_data.py
+
+$ python /code/scripts/import_files.py
+```
+
+# Utilities
+
+Connect to python interactive shell or database shell:
+
+```
+$ docker-compose run --rm djangoapp python manage.py shell
+
+$ docker-compose run --rm djangoapp python manage.py dbshell
+```
 
 # Special notes about links to dad-is interface
 
