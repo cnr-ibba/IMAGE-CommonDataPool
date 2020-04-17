@@ -2,7 +2,7 @@ import requests
 import json
 import logging
 
-from common import rotate_file, ETAG_FILE, FETCH_BIOSAMPLE_LOG_FILE
+from common import rotate_file, ETAG_FILE, FETCH_BIOSAMPLE_LOG_FILE, PAGE_SIZE
 
 SAMPLE_RULESET_URL = 'https://raw.githubusercontent.com/cnr-ibba/' \
                      'IMAGE-metadata/master/rulesets/sample_ruleset.json'
@@ -29,14 +29,20 @@ def fetch_biosamples():
     etags = read_etags()
     samples = list()
 
-    results = requests.get('https://www.ebi.ac.uk/biosamples/samples'
-                           '?size=10000&filter=attr:project:IMAGE').json()
+    results = requests.get(
+        f'https://www.ebi.ac.uk/biosamples/samples'
+        f'?size={PAGE_SIZE}&filter=attr:project:IMAGE').json()
+
     while 'next' in results['_links']:
         samples.extend(results['_embedded']['samples'])
         results = requests.get(results['_links']['next']['href']).json()
+
+    # extend last time
     samples.extend(results['_embedded']['samples'])
+
     organisms = list()
     specimens = list()
+
     for sample in samples:
         errors = dict()
         errors_organism = dict()
@@ -262,8 +268,10 @@ def convert_to_underscores(name):
 
 
 if __name__ == "__main__":
-    # rotating files
+    # rotating log and data files
     rotate_file(FETCH_BIOSAMPLE_LOG_FILE)
+    rotate_file('organisms.json')
+    rotate_file('specimens.json')
 
     organisms, specimens = fetch_biosamples()
 
