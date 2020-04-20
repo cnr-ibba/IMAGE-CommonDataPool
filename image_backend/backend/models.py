@@ -144,7 +144,8 @@ class SampleDataInfo(models.Model):
     organism_part_ontology = models.CharField(max_length=1000)
 
     # recommended
-    specimen_collection_protocol = models.CharField(max_length=1000, blank=True)
+    specimen_collection_protocol = models.CharField(
+        max_length=1000, blank=True)
     collection_date = models.CharField(max_length=1000, blank=True)
     collection_date_unit = models.CharField(max_length=1000, blank=True)
     collection_place_latitude = models.CharField(max_length=1000, blank=True)
@@ -155,9 +156,11 @@ class SampleDataInfo(models.Model):
                                                        blank=True)
     collection_place = models.CharField(max_length=1000, blank=True)
     developmental_stage = models.CharField(max_length=1000, blank=True)
-    developmental_stage_ontology = models.CharField(max_length=1000, blank=True)
+    developmental_stage_ontology = models.CharField(
+        max_length=1000, blank=True)
     physiological_stage = models.CharField(max_length=1000, blank=True)
-    physiological_stage_ontology = models.CharField(max_length=1000, blank=True)
+    physiological_stage_ontology = models.CharField(
+        max_length=1000, blank=True)
     availability = models.CharField(max_length=1000, blank=True)
     sample_storage = models.CharField(max_length=1000, blank=True)
     sample_storage_processing = models.CharField(max_length=1000, blank=True)
@@ -287,3 +290,28 @@ class GenotypingInfo(models.Model):
     sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
     genotyping_protocol = models.CharField(max_length=1000)
 
+
+class Species2CommonName(models.Model):
+    # in theory the scientific name is unique. However, what if a species
+    # has more than one common name?
+    scientific_name = models.CharField(max_length=255, db_index=True)
+    common_name = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "Species to common name"
+
+    def __str__(self):
+        return f"{self.common_name} ({self.scientific_name})"
+
+
+class DADISLink(models.Model):
+    species = models.ForeignKey(
+        Species2CommonName,
+        on_delete=models.CASCADE)
+    supplied_breed = models.CharField(max_length=255)
+    efabis_breed_country = models.CharField(max_length=255)
+    dadis_url = models.URLField(max_length=255)
+
+    class Meta:
+        unique_together = (
+            "species", "supplied_breed", "efabis_breed_country")
