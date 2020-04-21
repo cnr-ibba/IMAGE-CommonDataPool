@@ -375,9 +375,10 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class SpecimensDetailsView(generics.RetrieveAPIView):
+class SpecimensDetailsView(generics.RetrieveDestroyAPIView):
     queryset = SampleInfo.objects.all()
     serializer_class = SpecimensSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get(self, request, *a, **kw):
         try:
@@ -483,9 +484,10 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class OrganismsDetailsView(generics.RetrieveAPIView):
+class OrganismsDetailsView(generics.RetrieveDestroyAPIView):
     queryset = SampleInfo.objects.all()
     serializer_class = OrganismsSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get(self, request, *a, **kw):
         try:
