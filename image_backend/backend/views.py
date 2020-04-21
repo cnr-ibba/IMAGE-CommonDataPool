@@ -1,9 +1,11 @@
-import json
+
 import math
 
 from django.http import JsonResponse, HttpResponse
 from rest_framework import generics, permissions, filters
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from rest_framework.views import status
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,6 +13,50 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import SampleInfo, Files
 from .serializers import SpecimensSerializer, OrganismsSerializer, \
     OrganismsSerializerShort, SpecimensSerializerShort, FilesSerializer
+
+
+@api_view(['GET'])
+def backend_root(request, format=None):
+
+    def construct_reponse(params):
+        """
+        Define a dictionary of response from a dictionary of parameters,
+        where keys are locations and values are names (as defined in
+        backend.urls)
+        """
+
+        result = dict()
+        base_url = "/data_portal/backend/"
+        app_name = "backend"
+
+        for path, name in params.items():
+            result[base_url+path] = reverse(
+                ":".join([app_name, name]),
+                request=request,
+                format=format)
+
+        return result
+
+    # this is my parameters dictionary. The detail pages are not displayed
+    data = {
+        "organism/": "organismindex",
+        "organism_short/": "organismindex_short",
+        "organism/summary/": "organism_summary",
+        "organism/graphical_summary/": "organism_graphical_summary",
+        "organism/gis_search/": "organism_gis_search",
+        "organism/download/": "organism_download",
+        'specimen/': 'specimenindex',
+        'specimen_short/': 'specimenindex_short',
+        'specimen/summary/': 'specimen_summary',
+        'specimen/graphical_summary/': 'specimens_graphical_summary',
+        'specimen/gis_search/': 'specimen_gis_search',
+        'specimen/download/': 'specimen_download',
+        'file/': 'fileindex',
+        'file/download/': 'file_download',
+    }
+
+    # combine data in order to have a correct response
+    return Response(construct_reponse(data))
 
 
 def get_organisms_summary(request):

@@ -2,7 +2,8 @@ from django.urls import path
 
 from . import views
 
-app_name = 'polls'
+app_name = 'backend'
+
 urlpatterns = [
     path('organism/', views.ListCreateOrganismsView.as_view(),
          name='organismindex'),
