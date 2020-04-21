@@ -151,7 +151,8 @@ def organisms_gis_search(request):
                                 organisms__birth_location_latitude='')
     for record in organisms:
         organism = record.organisms.get()
-        organism_latitude = convert_to_radians(organism.birth_location_latitude)
+        organism_latitude = convert_to_radians(
+            organism.birth_location_latitude)
         organism_longitude = convert_to_radians(
             organism.birth_location_longitude)
         if math.acos(math.sin(latitude) * math.sin(organism_latitude) +
@@ -307,7 +308,8 @@ class ListSpecimensView(generics.ListCreateAPIView):
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
-                     'person_role', 'person_role_ontology', 'organization_name',
+                     'person_role', 'person_role_ontology',
+                     'organization_name',
                      'organization_role', 'organization_role_ontology',
                      'gene_bank_name', 'gene_bank_country',
                      'gene_bank_country_ontology', 'data_source_type',
@@ -406,7 +408,7 @@ class SpecimensDetailsView(generics.RetrieveDestroyAPIView):
                 },
                 status=status.HTTP_202_ACCEPTED
             )
-        except:
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Specimen with id: {} does not exist".format(
@@ -424,7 +426,8 @@ class ListOrganismsView(generics.ListCreateAPIView):
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
-                     'person_role', 'person_role_ontology', 'organization_name',
+                     'person_role', 'person_role_ontology',
+                     'organization_name',
                      'organization_role', 'organization_role_ontology',
                      'gene_bank_name', 'gene_bank_country',
                      'gene_bank_country_ontology', 'data_source_type',
@@ -469,8 +472,8 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
     filterset_fields = ['species', 'organisms__supplied_breed',
                         'organisms__sex']
     search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
-    ordering_fields = ['data_source_id', 'species', 'organisms__supplied_breed',
-                       'organisms__sex']
+    ordering_fields = ['data_source_id', 'species',
+                       'organisms__supplied_breed', 'organisms__sex']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
@@ -565,7 +568,7 @@ class FilesDetailsView(generics.RetrieveAPIView):
         try:
             file = self.queryset.get(data_source_id=kw['specimen_id'])
             return Response(FilesSerializer(file).data)
-        except:
+        except Files.DoesNotExist:
             return Response(
                 data={
                     "message": "File with id: {} does not exist".format(
@@ -580,15 +583,15 @@ class FilesDetailsView(generics.RetrieveAPIView):
             file.delete()
             return Response(
                 data={
-                    "message": "Specimen with id: {} was deleted".format(
+                    "message": "File with id: {} was deleted".format(
                         kw['specimen_id'])
                 },
                 status=status.HTTP_202_ACCEPTED
             )
-        except:
+        except Files.DoesNotExist:
             return Response(
                 data={
-                    "message": "Specimen with id: {} does not exist".format(
+                    "message": "File with id: {} does not exist".format(
                         kw['specimen_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
