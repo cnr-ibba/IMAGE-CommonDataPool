@@ -4,6 +4,12 @@ from . import views
 
 app_name = 'backend'
 
+
+species2commonnames_list = views.SpeciesToCommonNameViewSet.as_view({
+    'get': 'list'
+})
+
+
 urlpatterns = [
     path('organism/', views.ListCreateOrganismsView.as_view(),
          name='organismindex'),
@@ -36,5 +42,6 @@ urlpatterns = [
     path('file/', views.ListCreateFilesView.as_view(), name='fileindex'),
     path('file/download/', views.download_file_data, name='file_download'),
     path('file/<specimen_id>/', views.FilesDetailsView.as_view(),
-         name='filedetail')
+         name='filedetail'),
+    path('species', species2commonnames_list, name='species'),
 ]

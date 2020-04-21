@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models import SampleInfo, AnimalInfo, SampleDataInfo, Files
+from .models import (
+    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName)
 
 
 class FilesSerializer(serializers.ModelSerializer):
@@ -134,3 +135,9 @@ class OrganismsSerializerShort(serializers.ModelSerializer):
         for organism in organisms_data:
             AnimalInfo.objects.create(sample=sample, **organism)
         return sample
+
+
+class Species2CommonNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Species2CommonName
+        fields = ('scientific_name', 'common_name')

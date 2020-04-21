@@ -7,12 +7,14 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import status
+from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SampleInfo, Files
-from .serializers import SpecimensSerializer, OrganismsSerializer, \
-    OrganismsSerializerShort, SpecimensSerializerShort, FilesSerializer
+from .models import SampleInfo, Files, Species2CommonName
+from .serializers import (
+    SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
+    SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer)
 
 
 @api_view(['GET'])
@@ -53,6 +55,7 @@ def backend_root(request, format=None):
         'specimen/download/': 'specimen_download',
         'file/': 'fileindex',
         'file/download/': 'file_download',
+        'species': 'species',
     }
 
     # combine data in order to have a correct response
@@ -584,3 +587,11 @@ class FilesDetailsView(generics.RetrieveAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class SpeciesToCommonNameViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    This viewset automatically provides `list` and `detail` actions.
+    """
+    queryset = Species2CommonName.objects.all()
+    serializer_class = Species2CommonNameSerializer
