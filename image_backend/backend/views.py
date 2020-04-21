@@ -299,7 +299,7 @@ class LargeResultsSetPagination(PageNumberPagination):
     max_page_size = 1000000
 
 
-class ListCreateSpecimensView(generics.ListCreateAPIView):
+class ListSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -352,7 +352,7 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
+class ListSpecimensViewShort(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -381,25 +381,27 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
 
     def get(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['specimen_id'])
-            return Response(SpecimensSerializer(organism).data)
-        except:
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
+            return Response(SpecimensSerializer(
+                organism, context={'request': request}).data)
+
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['specimen_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
     def delete(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['specimen_id'])
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
             organism.delete()
             return Response(
                 data={
                     "message": "Specimen with id: {} was deleted".format(
-                        kw['specimen_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_202_ACCEPTED
             )
@@ -407,13 +409,13 @@ class SpecimensDetailsView(generics.RetrieveAPIView):
             return Response(
                 data={
                     "message": "Specimen with id: {} does not exist".format(
-                        kw['specimen_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
 
-class ListCreateOrganismsView(generics.ListCreateAPIView):
+class ListOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -457,7 +459,7 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
+class ListOrganismsViewShort(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -487,33 +489,35 @@ class OrganismsDetailsView(generics.RetrieveAPIView):
 
     def get(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['organism_id'])
-            return Response(OrganismsSerializer(organism).data)
-        except:
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
+            return Response(OrganismsSerializer(
+                organism, context={'request': request}).data)
+
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['organism_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
     def delete(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['organism_id'])
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
             organism.delete()
             return Response(
                 data={
                     "message": "Organism with id: {} was deleted".format(
-                        kw['organism_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_202_ACCEPTED
             )
-        except:
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['organism_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )

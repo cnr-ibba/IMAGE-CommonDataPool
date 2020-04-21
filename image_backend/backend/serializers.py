@@ -53,12 +53,17 @@ class AnimalInfoSerializerShort(serializers.ModelSerializer):
                   'birth_location_longitude', 'birth_location_latitude')
 
 
-class SpecimensSerializer(serializers.ModelSerializer):
+class SpecimensSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:specimendetail',
+        lookup_field='data_source_id'
+    )
+
     specimens = SampleDataInfoSerializer(many=True)
 
     class Meta:
         model = SampleInfo
-        fields = ('data_source_id', 'alternative_id', 'project',
+        fields = ('url', 'data_source_id', 'alternative_id', 'project',
                   'submission_title', 'material', 'material_ontology',
                   'person_last_name', 'person_email', 'person_affiliation',
                   'person_role', 'person_role_ontology', 'organization_name',
@@ -95,12 +100,17 @@ class SpecimensSerializerShort(serializers.ModelSerializer):
         return sample
 
 
-class OrganismsSerializer(serializers.ModelSerializer):
+class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:organismdetail',
+        lookup_field='data_source_id'
+    )
+
     organisms = AnimalInfoSerializer(many=True)
 
     class Meta:
         model = SampleInfo
-        fields = ('data_source_id', 'alternative_id', 'project',
+        fields = ('url', 'data_source_id', 'alternative_id', 'project',
                   'submission_title', 'material', 'material_ontology',
                   'person_last_name', 'person_email', 'person_affiliation',
                   'person_role', 'person_role_ontology', 'organization_name',
