@@ -43,5 +43,5 @@ urlpatterns = [
     path('file/download/', views.download_file_data, name='file_download'),
     path('file/<specimen_id>/', views.FilesDetailsView.as_view(),
          name='filedetail'),
-    path('species', species2commonnames_list, name='species'),
+    path('species/', species2commonnames_list, name='species'),
 ]

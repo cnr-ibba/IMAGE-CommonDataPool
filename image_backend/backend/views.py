@@ -55,7 +55,7 @@ def backend_root(request, format=None):
         'specimen/download/': 'specimen_download',
         'file/': 'fileindex',
         'file/download/': 'file_download',
-        'species': 'species',
+        'species/': 'species',
     }
 
     # combine data in order to have a correct response
@@ -346,7 +346,8 @@ class ListSpecimensView(generics.ListCreateAPIView):
         return SampleInfo.objects.filter(specimens__isnull=False)
 
     def post(self, request, *args, **kwargs):
-        serializer = SpecimensSerializer(data=request.data)
+        serializer = SpecimensSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -455,7 +456,8 @@ class ListOrganismsView(generics.ListCreateAPIView):
         return SampleInfo.objects.filter(organisms__isnull=False)
 
     def post(self, request, *args, **kwargs):
-        serializer = OrganismsSerializer(data=request.data)
+        serializer = OrganismsSerializer(
+            data=request.data,  context={'request': request})
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

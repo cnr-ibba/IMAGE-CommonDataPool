@@ -92,6 +92,9 @@ class SampleInfo(models.Model):
     organization_uri = ArrayField(models.TextField(blank=True), blank=True)
     publication_doi = models.CharField(max_length=1000, blank=True)
 
+    class Meta:
+        ordering = ['-data_source_id']
+
 
 class Files(models.Model):
     # Specimen BioSample id
@@ -102,6 +105,9 @@ class Files(models.Model):
     file_size = ArrayField(models.CharField(max_length=1000))
     file_checksum = ArrayField(models.CharField(max_length=1000))
     file_checksum_method = ArrayField(models.CharField(max_length=1000))
+
+    class Meta:
+        ordering = ['-data_source_id']
 
 
 class AnimalInfo(models.Model):
