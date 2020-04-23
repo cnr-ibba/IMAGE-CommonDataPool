@@ -170,7 +170,6 @@ class DADISLinkSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         species = validated_data.pop('species')
         species_obj = Species2CommonName.objects.get(**species)
-        print(species_obj)
         dadis = DADISLink.objects.create(species=species_obj, **validated_data)
 
         return dadis
