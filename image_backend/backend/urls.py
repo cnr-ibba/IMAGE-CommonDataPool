@@ -9,6 +9,11 @@ species2commonnames_list = views.SpeciesToCommonNameViewSet.as_view({
     'get': 'list'
 })
 
+dadislink_list = views.DADISLinkViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
 
 urlpatterns = [
     path('organism/', views.ListOrganismsView.as_view(),
@@ -44,4 +49,5 @@ urlpatterns = [
     path('file/<specimen_id>/', views.FilesDetailsView.as_view(),
          name='filedetail'),
     path('species/', species2commonnames_list, name='species'),
+    path('dadis_link/', dadislink_list, name='dadis_link'),
 ]

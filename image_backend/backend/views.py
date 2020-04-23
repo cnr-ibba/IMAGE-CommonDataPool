@@ -11,10 +11,11 @@ from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SampleInfo, Files, Species2CommonName
+from .models import SampleInfo, Files, Species2CommonName, DADISLink
 from .serializers import (
     SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
-    SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer)
+    SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer,
+    DADISLinkSerializer)
 
 
 @api_view(['GET'])
@@ -56,6 +57,7 @@ def backend_root(request, format=None):
         'file/': 'fileindex',
         'file/download/': 'file_download',
         'species/': 'species',
+        'dadis_link': 'dadis_link'
     }
 
     # combine data in order to have a correct response
@@ -606,3 +608,13 @@ class SpeciesToCommonNameViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = Species2CommonName.objects.all()
     serializer_class = Species2CommonNameSerializer
+
+
+class DADISLinkViewSet(viewsets.ModelViewSet):
+    """
+    Update DADIS table
+    """
+
+    queryset = DADISLink.objects.all()
+    serializer_class = DADISLinkSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]

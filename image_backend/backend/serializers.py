@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from .models import (
-    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName)
+    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
+    DADISLink)
 
 
 class FilesSerializer(serializers.ModelSerializer):
@@ -14,18 +15,19 @@ class FilesSerializer(serializers.ModelSerializer):
 class SampleDataInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = SampleDataInfo
-        fields = ('derived_from', 'collection_place_accuracy', 'organism_part',
-                  'organism_part_ontology', 'specimen_collection_protocol',
-                  'collection_date', 'collection_date_unit',
-                  'collection_place_latitude', 'collection_place_latitude_unit',
-                  'collection_place_longitude',
-                  'collection_place_longitude_unit', 'collection_place',
-                  'developmental_stage', 'developmental_stage_ontology',
-                  'physiological_stage', 'physiological_stage_ontology',
-                  'availability', 'sample_storage', 'sample_storage_processing',
-                  'animal_age_at_collection', 'animal_age_at_collection_unit',
-                  'sampling_to_preparation_interval',
-                  'sampling_to_preparation_interval_unit')
+        fields = (
+            'derived_from', 'collection_place_accuracy', 'organism_part',
+            'organism_part_ontology', 'specimen_collection_protocol',
+            'collection_date', 'collection_date_unit',
+            'collection_place_latitude', 'collection_place_latitude_unit',
+            'collection_place_longitude',
+            'collection_place_longitude_unit', 'collection_place',
+            'developmental_stage', 'developmental_stage_ontology',
+            'physiological_stage', 'physiological_stage_ontology',
+            'availability', 'sample_storage', 'sample_storage_processing',
+            'animal_age_at_collection', 'animal_age_at_collection_unit',
+            'sampling_to_preparation_interval',
+            'sampling_to_preparation_interval_unit')
 
 
 class SampleDataInfoSerializerShort(serializers.ModelSerializer):
@@ -151,3 +153,24 @@ class Species2CommonNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Species2CommonName
         fields = ('scientific_name', 'common_name')
+
+
+class DADISLinkSerializer(serializers.ModelSerializer):
+    species = Species2CommonNameSerializer(many=False, read_only=False)
+
+    class Meta:
+        model = DADISLink
+        fields = (
+            'species',
+            'supplied_breed',
+            'efabis_breed_country',
+            'dadis_url',
+        )
+
+    def create(self, validated_data):
+        species = validated_data.pop('species')
+        species_obj = Species2CommonName.objects.get(**species)
+        print(species_obj)
+        dadis = DADISLink.objects.create(species=species_obj, **validated_data)
+
+        return dadis

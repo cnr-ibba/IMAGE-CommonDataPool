@@ -316,8 +316,32 @@ class DADISLink(models.Model):
         on_delete=models.CASCADE)
     supplied_breed = models.CharField(max_length=255)
     efabis_breed_country = models.CharField(max_length=255)
-    dadis_url = models.URLField(max_length=255)
+    dadis_url = models.URLField(
+        max_length=255,
+        null=True,
+        blank=True)
 
     class Meta:
         unique_together = (
             "species", "supplied_breed", "efabis_breed_country")
+
+    def __str__(self):
+        return "%s,%s,%s" % (
+            self.species.common_name,
+            self.supplied_breed,
+            self.efabis_breed_country)
+
+    def save(self, *args, **kwargs):
+        if self.dadis_url is None or self.dadis_url == '':
+            self.dadis_url = (
+                "https://dadis-breed-4eff5.firebaseapp.com/?country="
+                "{country}&specie={specie}&breed={breed}"
+                "&callback=allbreeds"
+            ).format(
+                country=self.efabis_breed_country,
+                specie=self.species.common_name,
+                breed=self.supplied_breed
+            )
+
+        # call the base method
+        super().save(*args, **kwargs)

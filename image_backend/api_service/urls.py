@@ -19,8 +19,11 @@ from django.urls import path, include
 from backend.views import backend_root
 
 urlpatterns = [
-    path('data_portal/', backend_root),
+    path('data_portal/', backend_root, name='index'),
     path('data_portal/admin/', admin.site.urls),
     path('data_portal/backend/', include('backend.urls')),
     path('data_portal/api-auth/', include('rest_framework.urls')),
 ]
+
+# customizing admin
+admin.site.site_url = "/data_portal/"
