@@ -11,8 +11,37 @@ IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG)
+    level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# a global variables
+SPECIES2COMMON = dict()
+SESSION = None
+
+
+def post_organism(record):
+    """Post a single organism"""
+
+    global SESSION
+
+    response = SESSION.post(f'{BACKEND_URL}/organism/', json=record)
+
+    if response.status_code != 201:
+        logger.error(response.text)
+
+    # ok, try to fill DADIS link table
+    fill_dadis(record)
+
+
+def post_specimen(record):
+    """post a single specimen"""
+
+    global SESSION
+
+    response = SESSION.post(f'{BACKEND_URL}/specimen/', json=record)
+
+    if response.status_code != 201:
+        logger.error(response.text)
 
 
 def import_data():
@@ -28,13 +57,11 @@ def import_data():
     # Import all data if CPD is empty
     if organism_etags == {} and specimen_etags == {}:
         for organism in organisms_data:
-            requests.post(
-                f'{BACKEND_URL}/organism/', json=organism,
-                auth=('admin', IMPORT_PASSWORD))
+            post_organism(organism)
+
         for specimen in specimens_data:
-            requests.post(
-                f'{BACKEND_URL}/specimen/', json=specimen,
-                auth=('admin', IMPORT_PASSWORD))
+            post_specimen(specimen)
+
         return
 
     for biosample_id, etag in biosample_etags.items():
@@ -82,25 +109,14 @@ def add_single_record(
         idx = organisms_idx[biosample_id]
         record = organisms_data[idx]
         logger.debug(f"Loading {biosample_id}")
-        response = requests.post(
-            f'{BACKEND_URL}/organism/', json=record,
-            auth=('admin', IMPORT_PASSWORD))
-
-        if response.status_code != 201:
-            logger.error(response.text)
-
+        post_organism(record)
 
     if specimens_data is not None and biosample_id in specimens_idx:
         # get positions from dict indexes
         idx = specimens_idx[biosample_id]
         record = specimens_data[idx]
         logger.debug(f"Loading {biosample_id}")
-        response = requests.post(
-            f'{BACKEND_URL}/specimen/', json=record,
-            auth=('admin', IMPORT_PASSWORD))
-
-        if response.status_code != 201:
-            logger.error(response.text)
+        post_specimen(record)
 
 
 def update_organism_record(biosample_id, organisms_data, organisms_idx):
@@ -110,8 +126,10 @@ def update_organism_record(biosample_id, organisms_data, organisms_idx):
     :param organisms_data: file with organisms data
     :param organisms_idx: dictionary with biosample_id -> position
     """
-    response = requests.delete(f"{BACKEND_URL}/organism/{biosample_id}",
-                               auth=('admin', IMPORT_PASSWORD))
+
+    global SESSION
+
+    response = SESSION.delete(f"{BACKEND_URL}/organism/{biosample_id}")
 
     if response.status_code != 202:
         logger.error(response.text)
@@ -129,7 +147,10 @@ def update_specimen_record(biosample_id, specimens_data, specimens_idx):
     :param specimens_data: file with specimens data
     :param specimens_idx: dictionary with biosample_id -> position
     """
-    response = requests.delete(f"{BACKEND_URL}/specimen/{biosample_id}")
+
+    global SESSION
+
+    response = SESSION.delete(f"{BACKEND_URL}/specimen/{biosample_id}")
 
     if response.status_code != 202:
         logger.error(response.text)
@@ -165,14 +186,19 @@ def read_cdp_etags(records_type):
     :param records_type: type of record to parse
     :return: dict with etags
     """
+
+    global SESSION
+
     cdp_etags = dict()
-    response = requests.get(
+    response = SESSION.get(
         f"{BACKEND_URL}/{records_type}/"
         f"?page_size={PAGE_SIZE}&ordering=data_source_id").json()
+
     while response['next'] is not None:
         for record in response['results']:
             cdp_etags[record['data_source_id']] = record['etag']
         response = requests.get(response['next']).json()
+
     for record in response['results']:
         cdp_etags[record['data_source_id']] = record['etag']
 
@@ -188,7 +214,9 @@ def read_data(file_type):
     :param file_type: might be organisms or specimens
     :return: loaded json file and index dictionary
     """
+
     file_name = ''
+
     if file_type == 'organisms':
         file_name = 'organisms.json'
     elif file_type == 'specimens':
@@ -207,6 +235,61 @@ def read_data(file_type):
     return data, data_idx
 
 
+# a function to get the list of common species from data_portal
+def get_species2commonname():
+    global SESSION
+
+    response = SESSION.get(BACKEND_URL + '/species/')
+
+    species2commonnames = dict()
+
+    for item in response.json():
+        scientific_name = item['scientific_name']
+        common_name = item['common_name']
+
+        species2commonnames[scientific_name] = common_name
+
+    return species2commonnames
+
+
+def fill_dadis(record):
+    global SPECIES2COMMON, SESSION
+
+    scientific_name = record['species']
+    common_name = SPECIES2COMMON[scientific_name]
+
+    # contruct a species dictionary
+    species = {
+        'common_name': common_name,
+        'scientific_name': scientific_name}
+
+    # now create a dictionary for my object
+    data = {
+        'species': species,
+        'supplied_breed': record['organisms'][0]['supplied_breed'],
+        'efabis_breed_country': record['organisms'][0]['efabis_breed_country']
+    }
+
+    # TODO: check if record exists
+
+    response = SESSION.post(
+        BACKEND_URL + '/dadis_link/',
+        json=data)
+
+    if response.status_code != 201:
+        logger.warning(f"Cannot set {data}")
+
+    else:
+        logger.debug(f"{data} added to CDP")
+
+
 if __name__ == "__main__":
+    # start a session with CDP
+    SESSION = requests.Session()
+    SESSION.auth = ('admin', IMPORT_PASSWORD)
+
+    # get species to common names
+    SPECIES2COMMON = get_species2commonname()
+
     # now import data
     import_data()
