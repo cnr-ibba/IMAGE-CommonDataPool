@@ -91,6 +91,8 @@ def import_data():
                 specimens_data,
                 specimens_idx)
 
+    logger.info("Data import completed")
+
 
 def add_single_record(
         biosample_id, organisms_data=None, organisms_idx=None,
@@ -256,6 +258,13 @@ def fill_dadis(record):
     global SPECIES2COMMON, SESSION
 
     scientific_name = record['species']
+
+    if scientific_name not in SPECIES2COMMON:
+        # this species hasn't a coorrespondance in species tables, so
+        # I can't provide a link for dadis
+        logger.error(f"'{scientific_name}' is not modelled for DADIS")
+        return
+
     common_name = SPECIES2COMMON[scientific_name]
 
     # contruct a species dictionary
@@ -270,17 +279,22 @@ def fill_dadis(record):
         'efabis_breed_country': record['organisms'][0]['efabis_breed_country']
     }
 
-    # TODO: check if record exists
+    # check if record exists
+    response = SESSION.get(BACKEND_URL + "/dadis_link/", params=data)
 
-    response = SESSION.post(
-        BACKEND_URL + '/dadis_link/',
-        json=data)
+    if response.json()['count'] == 0:
+        response = SESSION.post(
+            BACKEND_URL + '/dadis_link/',
+            json=data)
 
-    if response.status_code != 201:
-        logger.warning(f"Cannot set {data}")
+        if response.status_code != 201:
+            raise Exception(f"Cannot set {data}")
+
+        else:
+            logger.info(f"{data} added to CDP")
 
     else:
-        logger.debug(f"{data} added to CDP")
+        logger.debug(f"{data} already in CDP")
 
 
 if __name__ == "__main__":

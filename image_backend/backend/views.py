@@ -618,3 +618,8 @@ class DADISLinkViewSet(viewsets.ModelViewSet):
     queryset = DADISLink.objects.all()
     serializer_class = DADISLinkSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = LargeResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        'species__common_name', 'species__scientific_name', 'supplied_breed',
+        'efabis_breed_country']
