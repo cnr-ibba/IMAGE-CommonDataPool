@@ -14,6 +14,13 @@ dadislink_list = views.DADISLinkViewSet.as_view({
     'post': 'create'
 })
 
+dadislink_detail = views.DADISLinkViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+
 
 urlpatterns = [
     path('organism/', views.ListOrganismsView.as_view(),
@@ -50,4 +57,5 @@ urlpatterns = [
          name='filedetail'),
     path('species/', species2commonnames_list, name='species'),
     path('dadis_link/', dadislink_list, name='dadis_link'),
+    path('dadis_link/<int:pk>/', dadislink_detail, name='dadis_link-detail'),
 ]
