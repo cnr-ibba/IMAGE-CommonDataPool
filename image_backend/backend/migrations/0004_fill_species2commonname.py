@@ -6,6 +6,7 @@ from django.db import migrations
 # This translate the specie scientific name with DAD-IS common name
 # at the moment, Rainbow trout hasn't an entry into DAD-IS
 species_list = [
+    ('Equus asinus', 'Ass'),
     ('Bos taurus', 'Cattle'),
     ('Gallus gallus', 'Chicken'),
     ('Cervidae', 'Deer'),

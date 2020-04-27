@@ -276,6 +276,7 @@ class Species2CommonName(models.Model):
 
     class Meta:
         verbose_name = "Species to common name"
+        ordering = ['-id']
 
     def __str__(self):
         return f"{self.common_name} ({self.scientific_name})"
@@ -295,6 +296,7 @@ class DADISLink(models.Model):
     class Meta:
         unique_together = (
             "species", "supplied_breed", "efabis_breed_country")
+        ordering = ['-id']
 
     @classmethod
     def get_instance_from_dict(cls, adict):
@@ -364,4 +366,5 @@ class AnimalInfo(models.Model):
         DADISLink,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name="organisms")

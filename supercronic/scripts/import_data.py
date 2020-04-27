@@ -57,7 +57,8 @@ def post_organism(record):
     dadis_data = fill_dadis(record)
 
     # update record
-    record['organisms'][0]['dadis'] = dadis_data
+    if dadis_data:
+        record['organisms'][0]['dadis'] = dadis_data
 
     logger.debug(record)
 
@@ -340,7 +341,7 @@ def fill_dadis(record):
             raise Exception(f"Cannot set {data}")
 
         else:
-            logger.info(f"{data} added to CDP")
+            logger.debug(f"{data} added to CDP")
             dadis_data = response.json()
 
     elif response.json()['count'] == 1:

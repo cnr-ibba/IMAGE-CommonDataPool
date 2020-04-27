@@ -70,7 +70,7 @@ class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class AnimalInfoSerializer(serializers.ModelSerializer):
-    dadis = DADISLinkSerializer(many=False)
+    dadis = DADISLinkSerializer(many=False, required=False, allow_null=True)
 
     class Meta:
         model = AnimalInfo
@@ -168,8 +168,13 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
 
         for organism in organisms_data:
             # need to get cut the dadis attribute
-            dadis_data = organism.pop('dadis')
-            dadis = DADISLink.get_instance_from_dict(dadis_data)
+            dadis_data = organism.pop('dadis', None)
+
+            if dadis_data:
+                dadis = DADISLink.get_instance_from_dict(dadis_data)
+            else:
+                dadis = None
+
             AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
 
         return sample
