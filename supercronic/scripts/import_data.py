@@ -53,13 +53,20 @@ def post_organism(record):
 
     global SESSION
 
+    # ok, try to fill DADIS link table
+    dadis_data = fill_dadis(record)
+
+    # update record
+    record['organisms'][0]['dadis'] = dadis_data
+
+    logger.debug(record)
+
     response = SESSION.post(f'{BACKEND_URL}/organism/', json=record)
 
     if response.status_code != 201:
-        logger.error(response.text)
-
-    # ok, try to fill DADIS link table
-    fill_dadis(record)
+        # logger.error(response.text)
+        logger.error(record)
+        raise Exception(response.text[-200:])
 
 
 def post_specimen(record):
@@ -322,6 +329,8 @@ def fill_dadis(record):
     # check if record exists
     response = SESSION.get(BACKEND_URL + "/dadis_link/", params=data)
 
+    dadis_data = None
+
     if response.json()['count'] == 0:
         response = SESSION.post(
             BACKEND_URL + '/dadis_link/',
@@ -332,9 +341,19 @@ def fill_dadis(record):
 
         else:
             logger.info(f"{data} added to CDP")
+            dadis_data = response.json()
+
+    elif response.json()['count'] == 1:
+        logger.debug(f"{data} already in CDP")
+        dadis_data = response.json()['results'][0]
 
     else:
-        logger.debug(f"{data} already in CDP")
+        raise Exception(response.json())
+
+    # return dadis data to complete organism insert
+    logger.debug(dadis_data)
+
+    return dadis_data
 
 
 if __name__ == "__main__":

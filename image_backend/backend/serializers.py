@@ -37,7 +37,41 @@ class SampleDataInfoSerializerShort(serializers.ModelSerializer):
                   'collection_place_latitude', 'collection_place_longitude')
 
 
+class Species2CommonNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Species2CommonName
+        fields = ('scientific_name', 'common_name')
+
+
+class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
+    species = Species2CommonNameSerializer(many=False, read_only=False)
+
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:dadis_link-detail',
+        lookup_field='pk'
+    )
+
+    class Meta:
+        model = DADISLink
+        fields = (
+            'url',
+            'species',
+            'supplied_breed',
+            'efabis_breed_country',
+            'dadis_url',
+        )
+
+    def create(self, validated_data):
+        species = validated_data.pop('species')
+        species_obj = Species2CommonName.objects.get(**species)
+        dadis = DADISLink.objects.create(species=species_obj, **validated_data)
+
+        return dadis
+
+
 class AnimalInfoSerializer(serializers.ModelSerializer):
+    dadis = DADISLinkSerializer(many=False)
+
     class Meta:
         model = AnimalInfo
         fields = ('supplied_breed', 'efabis_breed_country', 'sex',
@@ -45,7 +79,9 @@ class AnimalInfoSerializer(serializers.ModelSerializer):
                   'mapped_breed_ontology', 'birth_date', 'birth_date_unit',
                   'birth_location', 'birth_location_longitude',
                   'birth_location_longitude_unit', 'birth_location_latitude',
-                  'birth_location_latitude_unit', 'child_of', 'specimens')
+                  'birth_location_latitude_unit', 'child_of', 'specimens',
+                  'dadis')
+        read_only_fields = ['dadis']
 
 
 class AnimalInfoSerializerShort(serializers.ModelSerializer):
@@ -129,8 +165,13 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         organisms_data = validated_data.pop('organisms')
         sample = SampleInfo.objects.create(**validated_data)
+
         for organism in organisms_data:
-            AnimalInfo.objects.create(sample=sample, **organism)
+            # need to get cut the dadis attribute
+            dadis_data = organism.pop('dadis')
+            dadis = DADISLink.get_instance_from_dict(dadis_data)
+            AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
+
         return sample
 
 
@@ -147,29 +188,3 @@ class OrganismsSerializerShort(serializers.ModelSerializer):
         for organism in organisms_data:
             AnimalInfo.objects.create(sample=sample, **organism)
         return sample
-
-
-class Species2CommonNameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Species2CommonName
-        fields = ('scientific_name', 'common_name')
-
-
-class DADISLinkSerializer(serializers.ModelSerializer):
-    species = Species2CommonNameSerializer(many=False, read_only=False)
-
-    class Meta:
-        model = DADISLink
-        fields = (
-            'species',
-            'supplied_breed',
-            'efabis_breed_country',
-            'dadis_url',
-        )
-
-    def create(self, validated_data):
-        species = validated_data.pop('species')
-        species_obj = Species2CommonName.objects.get(**species)
-        dadis = DADISLink.objects.create(species=species_obj, **validated_data)
-
-        return dadis
