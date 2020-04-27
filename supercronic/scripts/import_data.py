@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import argparse
 
 from decouple import config
 
@@ -17,6 +18,34 @@ logger = logging.getLogger(__name__)
 # a global variables
 SPECIES2COMMON = dict()
 SESSION = None
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=('Upload IMAGE data in Common Data Pool')
+    )
+
+    parser.add_argument(
+        "--force",
+        help="Force data upload (overwrite data if exists)",
+        action='store_true'
+    )
+
+    parser.add_argument(
+        "-u",
+        "--user",
+        help="User id",
+        default='admin'
+    )
+
+    parser.add_argument(
+        "-p",
+        "--password",
+        help="User password",
+        default=IMPORT_PASSWORD
+    )
+
+    return parser.parse_args()
 
 
 def post_organism(record):
@@ -44,7 +73,7 @@ def post_specimen(record):
         logger.error(response.text)
 
 
-def import_data():
+def import_data(force=False):
     # Read etags from biosamples and CPD
     biosample_etags = read_biosample_etags()
     organism_etags = read_cdp_etags('organism')
@@ -56,6 +85,8 @@ def import_data():
 
     # Import all data if CPD is empty
     if organism_etags == {} and specimen_etags == {}:
+        logger.info("Loading data into empty CDP")
+
         for organism in organisms_data:
             post_organism(organism)
 
@@ -63,6 +94,12 @@ def import_data():
             post_specimen(specimen)
 
         return
+
+    if force:
+        # erase etags from CDP in order to simulate a full update
+        logger.warning("Forcing CDP update")
+        organism_etags = {k: '' for k in organism_etags.keys()}
+        specimen_etags = {k: '' for k in specimen_etags.keys()}
 
     for biosample_id, etag in biosample_etags.items():
         if biosample_id not in organism_etags and biosample_id \
@@ -77,7 +114,7 @@ def import_data():
 
         elif biosample_id in organism_etags \
                 and etag != organism_etags[biosample_id]:
-            logger.info("Update organism: %s" % biosample_id)
+            logger.debug("Update organism: %s" % biosample_id)
             update_organism_record(
                 biosample_id,
                 organisms_data,
@@ -85,7 +122,7 @@ def import_data():
 
         elif biosample_id in specimen_etags \
                 and etag != specimen_etags[biosample_id]:
-            logger.info("Update specimen: %s" % biosample_id)
+            logger.debug("Update specimen: %s" % biosample_id)
             update_specimen_record(
                 biosample_id,
                 specimens_data,
@@ -243,6 +280,9 @@ def get_species2commonname():
 
     response = SESSION.get(BACKEND_URL + '/species/')
 
+    if response.status_code != 200:
+        raise Exception(response.text)
+
     species2commonnames = dict()
 
     for item in response.json():
@@ -298,12 +338,15 @@ def fill_dadis(record):
 
 
 if __name__ == "__main__":
+    # search for arguments
+    args = parse_args()
+
     # start a session with CDP
     SESSION = requests.Session()
-    SESSION.auth = ('admin', IMPORT_PASSWORD)
+    SESSION.auth = (args.user, args.password)
 
     # get species to common names
     SPECIES2COMMON = get_species2commonname()
 
     # now import data
-    import_data()
+    import_data(args.force)
