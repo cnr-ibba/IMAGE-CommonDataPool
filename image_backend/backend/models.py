@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.utils.http import urlquote
 
 
 EXPERIMENT_TYPE_ONTOLOGY_ID = (
@@ -108,36 +109,6 @@ class Files(models.Model):
 
     class Meta:
         ordering = ['-data_source_id']
-
-
-class AnimalInfo(models.Model):
-    # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="organisms",
-                               on_delete=models.CASCADE)
-    supplied_breed = models.CharField(max_length=1000)
-    efabis_breed_country = models.CharField(max_length=1000)
-    sex = models.CharField(max_length=1000)
-    sex_ontology = models.CharField(max_length=1000)
-    birth_location_accuracy = models.CharField(max_length=1000)
-
-    # recommended
-    mapped_breed = models.CharField(max_length=1000, blank=True)
-    mapped_breed_ontology = models.CharField(max_length=1000, blank=True)
-    birth_date = models.CharField(max_length=1000, blank=True)
-    birth_date_unit = models.CharField(max_length=1000, blank=True)
-    birth_location = models.CharField(max_length=1000, blank=True)
-    birth_location_longitude = models.CharField(max_length=1000, blank=True)
-    birth_location_longitude_unit = models.CharField(max_length=1000,
-                                                     blank=True)
-    birth_location_latitude = models.CharField(max_length=1000, blank=True)
-    birth_location_latitude_unit = models.CharField(max_length=1000,
-                                                    blank=True)
-
-    # optional
-    child_of = ArrayField(models.CharField(max_length=1000, blank=True),
-                          size=2, blank=True)
-    specimens = ArrayField(models.CharField(max_length=1000, blank=True),
-                           blank=True, default=list)
 
 
 class SampleDataInfo(models.Model):
@@ -325,6 +296,18 @@ class DADISLink(models.Model):
         unique_together = (
             "species", "supplied_breed", "efabis_breed_country")
 
+    @classmethod
+    def get_instance_from_dict(cls, adict):
+        qs = cls.objects.filter(
+            species__scientific_name=adict['species']['scientific_name'],
+            species__common_name=adict['species']['common_name'],
+            supplied_breed=adict['supplied_breed'],
+            efabis_breed_country=adict['efabis_breed_country'],
+            )
+
+        # should be one or None
+        return qs.first()
+
     def __str__(self):
         return "%s,%s,%s" % (
             self.species.common_name,
@@ -339,9 +322,46 @@ class DADISLink(models.Model):
                 "&callback=allbreeds"
             ).format(
                 country=self.efabis_breed_country,
-                specie=self.species.common_name,
-                breed=self.supplied_breed
+                specie=urlquote(self.species.common_name),
+                breed=urlquote(self.supplied_breed)
             )
 
         # call the base method
         super().save(*args, **kwargs)
+
+
+class AnimalInfo(models.Model):
+    # mandatory
+    sample = models.ForeignKey(SampleInfo, related_name="organisms",
+                               on_delete=models.CASCADE)
+    supplied_breed = models.CharField(max_length=1000)
+    efabis_breed_country = models.CharField(max_length=1000)
+    sex = models.CharField(max_length=1000)
+    sex_ontology = models.CharField(max_length=1000)
+    birth_location_accuracy = models.CharField(max_length=1000)
+
+    # recommended
+    mapped_breed = models.CharField(max_length=1000, blank=True)
+    mapped_breed_ontology = models.CharField(max_length=1000, blank=True)
+    birth_date = models.CharField(max_length=1000, blank=True)
+    birth_date_unit = models.CharField(max_length=1000, blank=True)
+    birth_location = models.CharField(max_length=1000, blank=True)
+    birth_location_longitude = models.CharField(max_length=1000, blank=True)
+    birth_location_longitude_unit = models.CharField(max_length=1000,
+                                                     blank=True)
+    birth_location_latitude = models.CharField(max_length=1000, blank=True)
+    birth_location_latitude_unit = models.CharField(max_length=1000,
+                                                    blank=True)
+
+    # optional
+    child_of = ArrayField(models.CharField(max_length=1000, blank=True),
+                          size=2, blank=True)
+    specimens = ArrayField(models.CharField(max_length=1000, blank=True),
+                           blank=True, default=list)
+
+    # custom
+    dadis = models.ForeignKey(
+        DADISLink,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="organisms")
