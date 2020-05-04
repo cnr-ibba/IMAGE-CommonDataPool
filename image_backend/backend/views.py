@@ -67,7 +67,8 @@ def backend_root(request, format=None):
     return Response(construct_reponse(data))
 
 
-def get_organisms_summary(request):
+@api_view(['GET'])
+def get_organisms_summary(request, format=None):
     species = dict()
     breed = dict()
     sex = dict()
@@ -93,7 +94,7 @@ def get_organisms_summary(request):
         breed[name] = results.filter(organisms__supplied_breed=name).count()
     for name in sex_names:
         sex[name] = results.filter(organisms__sex=name).count()
-    return JsonResponse(
+    return Response(
         {
             'species': species,
             'breed': breed,
@@ -102,7 +103,8 @@ def get_organisms_summary(request):
     )
 
 
-def get_organisms_graphical_summary(request):
+@api_view(['GET'])
+def get_organisms_graphical_summary(request, format=None):
     breeds = dict()
     species = dict()
     countries = dict()
@@ -130,7 +132,7 @@ def get_organisms_graphical_summary(request):
         organism = record.organisms.get()
         coordinates.append((organism.birth_location_longitude,
                             organism.birth_location_latitude))
-    return JsonResponse(
+    return Response(
 
         {
             'species': species,
@@ -145,7 +147,8 @@ def convert_to_radians(degrees):
     return float(degrees) * 3.14 / 180
 
 
-def organisms_gis_search(request):
+@api_view(['GET'])
+def organisms_gis_search(request, format=None):
     filter_results = dict()
     filter_results['results'] = list()
     latitude = convert_to_radians(request.GET.get('latitude', False))
@@ -170,7 +173,7 @@ def organisms_gis_search(request):
                 'sex': organism.sex
             }
             filter_results['results'].append(organism_results)
-    return JsonResponse(filter_results)
+    return Response(filter_results)
 
 
 def download_organism_data(request):
@@ -195,7 +198,8 @@ def download_organism_data(request):
     return response
 
 
-def get_specimens_summary(request):
+@api_view(['GET'])
+def get_specimens_summary(request, format=None):
     species = dict()
     organism_part = dict()
     species_filter = request.GET.get('species', False)
@@ -214,7 +218,7 @@ def get_specimens_summary(request):
     for name in organism_part_names:
         organism_part[name] = results.filter(
             specimens__organism_part=name).count()
-    return JsonResponse(
+    return Response(
         {
             'species': species,
             'organism_part': organism_part
@@ -222,7 +226,8 @@ def get_specimens_summary(request):
     )
 
 
-def get_specimens_graphical_summary(request):
+@api_view(['GET'])
+def get_specimens_graphical_summary(request, format=None):
     coordinates = list()
     organism_part = dict()
     results = SampleInfo.objects.filter(specimens__isnull=False)
@@ -237,7 +242,7 @@ def get_specimens_graphical_summary(request):
         specimen = record.specimens.get()
         coordinates.append((specimen.collection_place_longitude,
                             specimen.collection_place_latitude))
-    return JsonResponse(
+    return Response(
         {
             'organism_part': organism_part,
             'coordinates': coordinates
@@ -245,7 +250,8 @@ def get_specimens_graphical_summary(request):
     )
 
 
-def specimens_gis_search(request):
+@api_view(['GET'])
+def specimens_gis_search(request, format=None):
     filter_results = dict()
     filter_results['results'] = list()
     latitude = convert_to_radians(request.GET.get('latitude', False))
@@ -270,7 +276,7 @@ def specimens_gis_search(request):
                 'organism_part': specimen.organism_part
             }
             filter_results['results'].append(specimen_results)
-    return JsonResponse(filter_results)
+    return Response(filter_results)
 
 
 def download_specimen_data(request):
