@@ -60,6 +60,9 @@ def backend_root(request, format=None):
         'dadis_link': 'dadis_link'
     }
 
+    # info for debug toolbar
+    print("IP Address for debug-toolbar: " + request.META['REMOTE_ADDR'])
+
     # combine data in order to have a correct response
     return Response(construct_reponse(data))
 

@@ -29,6 +29,17 @@ DEBUG = config('DEBUG', cast=bool, default=False)
 
 ALLOWED_HOSTS = ['*']
 
+# internal ips (used for django-toolbar)
+# consider docker network ip addresses
+INTERNAL_IPS = [
+    '127.0.0.1',
+    '172.17.0.1',
+    '172.18.0.3',
+    '172.19.0.3',
+    '172.20.0.3',
+    '172.21.0.3',
+    '172.22.0.3',
+]
 
 # Application definition
 
@@ -40,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'debug_toolbar',
     'backend',
     'django_filters'
 ]
@@ -52,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'api_service.urls'
