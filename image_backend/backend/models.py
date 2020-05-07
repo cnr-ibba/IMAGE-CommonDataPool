@@ -334,8 +334,11 @@ class DADISLink(models.Model):
 
 class AnimalInfo(models.Model):
     # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="organisms",
-                               on_delete=models.CASCADE)
+    sample = models.ForeignKey(
+        SampleInfo,
+        related_name="organisms",
+        on_delete=models.CASCADE)
+
     supplied_breed = models.CharField(max_length=1000)
     efabis_breed_country = models.CharField(max_length=1000)
     sex = models.CharField(max_length=1000)

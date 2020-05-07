@@ -1,7 +1,9 @@
 
 import math
 
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
+from django.db.models import Count
+
 from rest_framework import generics, permissions, filters
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -69,78 +71,116 @@ def backend_root(request, format=None):
 
 @api_view(['GET'])
 def get_organisms_summary(request, format=None):
-    species = dict()
-    breed = dict()
-    sex = dict()
+    # get filters from get request
     species_filter = request.GET.get('species', False)
     breed_filter = request.GET.get('organisms__supplied_breed', False)
     sex_filter = request.GET.get('organisms__sex', False)
-    results = SampleInfo.objects.filter(organisms__isnull=False)
+
+    results = SampleInfo.objects.prefetch_related(
+        'organisms').filter(organisms__isnull=False)
+
+    # update queryset with filter submitted by GET
     if species_filter:
         results = results.filter(species=species_filter)
+
     if breed_filter:
         results = results.filter(organisms__supplied_breed=breed_filter)
+
     if sex_filter:
         results = results.filter(organisms__sex=sex_filter)
-    species_names = results.order_by().values_list(
-        'species', flat=True).distinct()
-    breed_names = results.order_by().values_list('organisms__supplied_breed',
-                                                 flat=True).distinct()
-    sex_names = results.order_by().values_list('organisms__sex',
-                                               flat=True).distinct()
-    for name in species_names:
-        species[name] = results.filter(species=name).count()
-    for name in breed_names:
-        breed[name] = results.filter(organisms__supplied_breed=name).count()
-    for name in sex_names:
-        sex[name] = results.filter(organisms__sex=name).count()
-    return Response(
-        {
-            'species': species,
-            'breed': breed,
-            'sex': sex
-        }
-    )
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    # count my items
+    species_count = count_items('species')
+    breeds_count = count_items('organisms__supplied_breed')
+    sex_count = count_items('organisms__sex')
+
+    return Response({
+        'species': species_count,
+        'breed': breeds_count,
+        'sex': sex_count
+    })
 
 
 @api_view(['GET'])
 def get_organisms_graphical_summary(request, format=None):
-    breeds = dict()
-    species = dict()
-    countries = dict()
-    coordinates = list()
-    results = SampleInfo.objects.filter(organisms__isnull=False)
-    species_names = results.order_by().values_list('species',
-                                                   flat=True).distinct()
-    country_names = results.order_by().values_list(
-        'organisms__efabis_breed_country', flat=True).distinct()
-    organisms = results.exclude(organisms__birth_location_longitude='',
-                                organisms__birth_location_latitude='')
-    for name in species_names:
-        species[name] = results.filter(species=name).count()
-        breeds.setdefault(name, dict())
-        tmp = results.filter(species=name)
-        breeds_names = tmp.order_by().values_list('organisms__supplied_breed',
-                                                  flat=True).distinct()
-        for breed_name in breeds_names:
-            breeds[name][breed_name] = tmp.filter(
-                organisms__supplied_breed=breed_name).count()
-    for name in country_names:
-        countries[name] = results.filter(
-            organisms__efabis_breed_country=name).count()
+    """Return statistics for IMAGE-Portal summary page"""
+
+    # start queryset
+    results = SampleInfo.objects.prefetch_related(
+        'organisms').filter(organisms__isnull=False)
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    def count_breeds(results=results):
+        qs = results.values(
+            'species',
+            'organisms__supplied_breed').annotate(
+                total=Count('species')).order_by('-total')
+
+        count = dict()
+
+        # read count items
+        for item in qs:
+            species = item['species']
+            breed = item['organisms__supplied_breed']
+            total = item['total']
+
+            if species not in count:
+                count.setdefault(species, dict())
+
+            count[species][breed] = total
+
+        return count
+
+    country_count = count_items('organisms__efabis_breed_country')
+    species_count = count_items('species')
+    breeds_count = count_breeds()
+
+    coordinates = dict()
+
+    organisms = results.exclude(
+        organisms__birth_location_longitude='',
+        organisms__birth_location_latitude='')
+
     for record in organisms:
         organism = record.organisms.get()
-        coordinates.append((organism.birth_location_longitude,
-                            organism.birth_location_latitude))
-    return Response(
+        coordinates.append(
+            (organism.birth_location_longitude,
+             organism.birth_location_latitude)
+        )
 
-        {
-            'species': species,
-            'breeds': breeds,
-            'countries': countries,
-            'coordinates': coordinates
-        }
-    )
+    return Response({
+        'species': species_count,
+        'breeds': breeds_count,
+        'countries': country_count,
+        'coordinates': coordinates
+    })
 
 
 def convert_to_radians(degrees):
@@ -464,7 +504,11 @@ class ListOrganismsView(generics.ListCreateAPIView):
     ordering_fields = ['data_source_id']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(organisms__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'organisms',
+            "organisms__dadis",
+            "organisms__dadis__species").filter(
+                organisms__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = OrganismsSerializer(
@@ -489,7 +533,8 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
                        'organisms__supplied_breed', 'organisms__sex']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(organisms__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'organisms').filter(organisms__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = OrganismsSerializerShort(data=request.data)
@@ -624,7 +669,7 @@ class DADISLinkViewSet(viewsets.ModelViewSet):
     Update DADIS table
     """
 
-    queryset = DADISLink.objects.all()
+    queryset = DADISLink.objects.select_related('species').all()
     serializer_class = DADISLinkSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = LargeResultsSetPagination
