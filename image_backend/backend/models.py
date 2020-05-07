@@ -72,7 +72,11 @@ class SampleInfo(models.Model):
     gene_bank_country_ontology = models.CharField(max_length=1000)
     data_source_type = models.CharField(max_length=1000)
     data_source_version = models.CharField(max_length=1000)
-    species = models.CharField(max_length=1000)
+
+    species = models.CharField(
+        max_length=1000,
+        db_index=True)
+
     species_ontology = models.CharField(max_length=1000)
     etag = models.CharField(max_length=1000)
 
@@ -371,3 +375,9 @@ class AnimalInfo(models.Model):
         null=True,
         blank=True,
         related_name="organisms")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['supplied_breed', 'efabis_breed_country']),
+            models.Index(fields=['efabis_breed_country']),
+        ]
