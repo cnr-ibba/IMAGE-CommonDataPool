@@ -117,12 +117,17 @@ class Files(models.Model):
 
 class SampleDataInfo(models.Model):
     # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="specimens",
-                               on_delete=models.CASCADE)
+    sample = models.ForeignKey(
+        SampleInfo,
+        related_name="specimens",
+        on_delete=models.CASCADE)
+
     derived_from = models.CharField(max_length=1000)
     collection_place_accuracy = models.CharField(max_length=1000)
     organism_part = models.CharField(max_length=1000)
-    organism_part_ontology = models.CharField(max_length=1000)
+    organism_part_ontology = models.CharField(
+        max_length=1000,
+        db_index=True)
 
     # recommended
     specimen_collection_protocol = models.CharField(

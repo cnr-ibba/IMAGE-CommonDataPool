@@ -162,7 +162,7 @@ def get_organisms_graphical_summary(request, format=None):
     species_count = count_items('species')
     breeds_count = count_breeds()
 
-    coordinates = dict()
+    coordinates = list()
 
     organisms = results.exclude(
         organisms__birth_location_longitude='',
@@ -240,54 +240,84 @@ def download_organism_data(request):
 
 @api_view(['GET'])
 def get_specimens_summary(request, format=None):
-    species = dict()
-    organism_part = dict()
+    # get filters from get request
     species_filter = request.GET.get('species', False)
     organism_part_filter = request.GET.get('specimens__organism_part', False)
-    results = SampleInfo.objects.filter(specimens__isnull=False)
+
+    results = SampleInfo.objects.prefetch_related(
+        'specimens').filter(specimens__isnull=False)
+
+    # update queryset with filter submitted by GET
     if species_filter:
         results = results.filter(species=species_filter)
+
     if organism_part_filter:
         results = results.filter(specimens__organism_part=organism_part_filter)
-    species_names = results.order_by().values_list('species',
-                                                   flat=True).distinct()
-    organism_part_names = results.order_by().values_list(
-        'specimens__organism_part', flat=True).distinct()
-    for name in species_names:
-        species[name] = results.filter(species=name).count()
-    for name in organism_part_names:
-        organism_part[name] = results.filter(
-            specimens__organism_part=name).count()
-    return Response(
-        {
-            'species': species,
-            'organism_part': organism_part
-        }
-    )
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    species_count = count_items('species')
+    organism_count = count_items('specimens__organism_part')
+
+    return Response({
+        'species': species_count,
+        'organism_part': organism_count
+    })
 
 
 @api_view(['GET'])
 def get_specimens_graphical_summary(request, format=None):
+    """Return statistics for IMAGE-Portal summary page"""
+
+    # start queryset
+    results = SampleInfo.objects.prefetch_related(
+        'specimens').filter(specimens__isnull=False)
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    organism_count = count_items('specimens__organism_part')
+
     coordinates = list()
-    organism_part = dict()
-    results = SampleInfo.objects.filter(specimens__isnull=False)
-    organism_part_names = results.order_by().values_list(
-        'specimens__organism_part', flat=True).distinct()
-    specimens = results.exclude(specimens__collection_place_latitude='',
-                                specimens__collection_place_longitude='')
-    for name in organism_part_names:
-        organism_part[name] = results.filter(
-            specimens__organism_part=name).count()
+
+    specimens = results.exclude(
+        specimens__collection_place_latitude='',
+        specimens__collection_place_longitude='')
+
     for record in specimens:
         specimen = record.specimens.get()
-        coordinates.append((specimen.collection_place_longitude,
-                            specimen.collection_place_latitude))
-    return Response(
-        {
-            'organism_part': organism_part,
-            'coordinates': coordinates
-        }
-    )
+        coordinates.append(
+            (specimen.collection_place_longitude,
+             specimen.collection_place_latitude)
+        )
+
+    return Response({
+        'organism_part': organism_count,
+        'coordinates': coordinates
+    })
 
 
 @api_view(['GET'])
@@ -394,7 +424,8 @@ class ListSpecimensView(generics.ListCreateAPIView):
     ordering_fields = ['data_source_id']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(specimens__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'specimens').filter(specimens__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = SpecimensSerializer(
@@ -418,7 +449,8 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
                        'specimens__organism_part']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(specimens__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'specimens').filter(specimens__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = SpecimensSerializerShort(data=request.data)
