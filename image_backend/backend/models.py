@@ -160,6 +160,12 @@ class SampleDataInfo(models.Model):
     sampling_to_preparation_interval_unit = models.CharField(max_length=1000,
                                                              blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=[
+                'collection_place_latitude', 'collection_place_longitude']),
+        ]
+
 
 class ExperimentInfo(models.Model):
     # mandatory
@@ -385,4 +391,6 @@ class AnimalInfo(models.Model):
         indexes = [
             models.Index(fields=['supplied_breed', 'efabis_breed_country']),
             models.Index(fields=['efabis_breed_country']),
+            models.Index(fields=[
+                'birth_location_latitude', 'birth_location_longitude']),
         ]

@@ -13,7 +13,9 @@ from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SampleInfo, Files, Species2CommonName, DADISLink
+from .models import (
+    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
+    DADISLink)
 from .serializers import (
     SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
     SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer,
@@ -120,8 +122,7 @@ def get_organisms_graphical_summary(request, format=None):
     """Return statistics for IMAGE-Portal summary page"""
 
     # start queryset
-    results = SampleInfo.objects.prefetch_related(
-        'organisms').filter(organisms__isnull=False)
+    results = AnimalInfo.objects.select_related("sample")
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -139,16 +140,16 @@ def get_organisms_graphical_summary(request, format=None):
 
     def count_breeds(results=results):
         qs = results.values(
-            'species',
-            'organisms__supplied_breed').annotate(
-                total=Count('species')).order_by('-total')
+            'sample__species',
+            'supplied_breed').annotate(
+                total=Count('sample__species')).order_by('-total')
 
         count = dict()
 
         # read count items
         for item in qs:
-            species = item['species']
-            breed = item['organisms__supplied_breed']
+            species = item['sample__species']
+            breed = item['supplied_breed']
             total = item['total']
 
             if species not in count:
@@ -158,18 +159,17 @@ def get_organisms_graphical_summary(request, format=None):
 
         return count
 
-    country_count = count_items('organisms__efabis_breed_country')
-    species_count = count_items('species')
+    country_count = count_items('efabis_breed_country')
+    species_count = count_items('sample__species')
     breeds_count = count_breeds()
 
     coordinates = list()
 
     organisms = results.exclude(
-        organisms__birth_location_longitude='',
-        organisms__birth_location_latitude='')
+        birth_location_longitude='',
+        birth_location_latitude='')
 
-    for record in organisms:
-        organism = record.organisms.get()
+    for organism in organisms:
         coordinates.append(
             (organism.birth_location_longitude,
              organism.birth_location_latitude)
@@ -282,8 +282,7 @@ def get_specimens_graphical_summary(request, format=None):
     """Return statistics for IMAGE-Portal summary page"""
 
     # start queryset
-    results = SampleInfo.objects.prefetch_related(
-        'specimens').filter(specimens__isnull=False)
+    results = SampleDataInfo.objects.select_related("sample")
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -299,16 +298,15 @@ def get_specimens_graphical_summary(request, format=None):
 
         return count
 
-    organism_count = count_items('specimens__organism_part')
+    organism_count = count_items('organism_part')
 
     coordinates = list()
 
     specimens = results.exclude(
-        specimens__collection_place_latitude='',
-        specimens__collection_place_longitude='')
+        collection_place_latitude='',
+        collection_place_longitude='')
 
-    for record in specimens:
-        specimen = record.specimens.get()
+    for specimen in specimens:
         coordinates.append(
             (specimen.collection_place_longitude,
              specimen.collection_place_latitude)
