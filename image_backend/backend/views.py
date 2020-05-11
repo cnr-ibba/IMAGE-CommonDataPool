@@ -2,6 +2,7 @@
 import math
 
 from django.http import HttpResponse
+from django.http.response import Http404
 from django.db.models import Count
 
 from rest_framework import generics, permissions, filters
@@ -587,45 +588,51 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class OrganismsDetailsView(generics.RetrieveDestroyAPIView):
+class OrganismsDetailsView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SampleInfo.objects.all()
+    lookup_field = "data_source_id"
     serializer_class = OrganismsSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    def get(self, request, *a, **kw):
+    # TODO: simplify this and text IMAGE-Portal
+    def retrieve(self, request, *args, **kwargs):
         try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            return Response(OrganismsSerializer(
-                organism, context={'request': request}).data)
+            instance = self.get_object()
 
-        except SampleInfo.DoesNotExist:
+        except Http404:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['data_source_id'])
+                        kwargs[self.lookup_field])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
-    def delete(self, request, *a, **kw):
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
         try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            organism.delete()
-            return Response(
-                data={
-                    "message": "Organism with id: {} was deleted".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_202_ACCEPTED
-            )
-        except SampleInfo.DoesNotExist:
+            instance = self.get_object()
+
+        except Http404:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['data_source_id'])
+                        kwargs[self.lookup_field])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        self.perform_destroy(instance)
+
+        # Set a custom message
+        data = {
+            "message": "Organism with id: {} was deleted".format(
+                kwargs[self.lookup_field])
+        }
+
+        return Response(data=data,  status=status.HTTP_202_ACCEPTED)
 
 
 class ListCreateFilesView(generics.ListCreateAPIView):
