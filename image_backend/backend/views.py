@@ -77,6 +77,7 @@ def get_organisms_summary(request, format=None):
     species_filter = request.GET.get('species', False)
     breed_filter = request.GET.get('organisms__supplied_breed', False)
     sex_filter = request.GET.get('organisms__sex', False)
+    country_filter = request.GET.get('organisms__efabis_breed_country', False)
 
     results = SampleInfo.objects.prefetch_related(
         'organisms').filter(organisms__isnull=False)
@@ -90,6 +91,10 @@ def get_organisms_summary(request, format=None):
 
     if sex_filter:
         results = results.filter(organisms__sex=sex_filter)
+
+    if country_filter:
+        results = results.filter(
+            organisms__efabis_breed_country=country_filter)
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -109,11 +114,13 @@ def get_organisms_summary(request, format=None):
     species_count = count_items('species')
     breeds_count = count_items('organisms__supplied_breed')
     sex_count = count_items('organisms__sex')
+    country_count = count_items('organisms__efabis_breed_country')
 
     return Response({
         'species': species_count,
         'breed': breeds_count,
-        'sex': sex_count
+        'sex': sex_count,
+        'country': country_count
     })
 
 
@@ -504,7 +511,11 @@ class ListOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [
+        DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = [
+        'species', 'organisms__supplied_breed',
+        'organisms__efabis_breed_country', 'organisms__sex']
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
@@ -556,8 +567,9 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter,
                        filters.OrderingFilter]
-    filterset_fields = ['species', 'organisms__supplied_breed',
-                        'organisms__sex']
+    filterset_fields = [
+        'species', 'organisms__supplied_breed',
+        'organisms__efabis_breed_country', 'organisms__sex']
     search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
     ordering_fields = ['data_source_id', 'species',
                        'organisms__supplied_breed', 'organisms__sex']
