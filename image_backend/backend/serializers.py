@@ -149,15 +149,12 @@ class SpecimensSerializer(serializers.HyperlinkedModelSerializer):
         instance = self.__update_instance(instance, validated_data)
 
         if specimens_data:
-            # Ok delete all AnimalInfo related objects
-            # HINT: will be simpler with a One2One relationship
-            instance.specimens.all().delete()
+            # HACK: there will be only one specimen for each sample
+            specimen = instance.specimens.first()
+            specimen_data = specimens_data[0]
 
-            # now process organism
-            for specimen_data in specimens_data:
-                # recreate info
-                SampleDataInfo.objects.create(
-                    sample=instance, **specimen_data)
+            # update specimen
+            specimen = self.__update_instance(specimen, specimen_data)
 
         return instance
 
@@ -244,23 +241,20 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
         instance = self.__update_instance(instance, validated_data)
 
         if organisms_data:
-            # Ok delete all AnimalInfo related objects
-            # HINT: will be simpler with a One2One relationship
-            instance.organisms.all().delete()
+            # HACK: there will be only one organism for each sample
+            organism = instance.organisms.first()
+            organism_data = organisms_data[0]
 
-            # now process organism
-            for organism_data in organisms_data:
-                # not sure about this
-                dadis_data = organism_data.pop('dadis', None)
+            # not sure about this
+            dadis_data = organism_data.pop('dadis', None)
 
-                if dadis_data:
-                    dadis = DADISLink.get_instance_from_dict(dadis_data)
-                else:
-                    dadis = None
+            # update organism
+            organism = self.__update_instance(organism, organism_data)
 
-                # recreate info
-                AnimalInfo.objects.create(
-                    dadis=dadis, sample=instance, **organism_data)
+            if dadis_data:
+                dadis = DADISLink.get_instance_from_dict(dadis_data)
+                organism.dadis = dadis
+                organism.save()
 
         return instance
 
