@@ -23,24 +23,90 @@ logging.basicConfig(
     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# global variables
+SPECIES2COMMON, COMMON2SPECIES = dict(), dict()
+SESSION = None
+
 BACKEND_URL = 'http://nginx/data_portal/backend'
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 
 
 # a function to get the list of common species from data_portal
 # TODO: can I return a dict from CDP?
-def get_species2commonname(session):
-    response = session.get(BACKEND_URL + '/species/')
+def get_species2commonname():
+    global SESSION
 
+    response = SESSION.get(BACKEND_URL + '/species/')
+
+    if response.status_code != 200:
+        raise Exception(response.text)
+
+    species2commonnames = dict()
     commonnames2species = dict()
 
     for item in response.json():
         scientific_name = item['scientific_name']
         common_name = item['common_name']
 
+        species2commonnames[scientific_name] = common_name
         commonnames2species[common_name] = scientific_name
 
-    return commonnames2species
+    return species2commonnames, commonnames2species
+
+
+def fill_dadis(record):
+    global SPECIES2COMMON, SESSION
+
+    scientific_name = record['species']
+
+    if scientific_name not in SPECIES2COMMON:
+        # this species hasn't a coorrespondance in species tables, so
+        # I can't provide a link for dadis
+        logger.error(f"'{scientific_name}' is not modelled for DADIS")
+        return
+
+    common_name = SPECIES2COMMON[scientific_name]
+
+    # contruct a species dictionary
+    species = {
+        'common_name': common_name,
+        'scientific_name': scientific_name}
+
+    # now create a dictionary for my object
+    data = {
+        'species': species,
+        'supplied_breed': record['organisms'][0]['supplied_breed'],
+        'efabis_breed_country': record['organisms'][0]['efabis_breed_country']
+    }
+
+    # check if record exists
+    response = SESSION.get(BACKEND_URL + "/dadis_link/", params=data)
+
+    dadis_data = None
+
+    if response.json()['count'] == 0:
+        response = SESSION.post(
+            BACKEND_URL + '/dadis_link/',
+            json=data)
+
+        if response.status_code != 201:
+            raise Exception(f"Cannot set {data}")
+
+        else:
+            logger.debug(f"{data} added to CDP")
+            dadis_data = response.json()
+
+    elif response.json()['count'] == 1:
+        logger.debug(f"{data} already in CDP")
+        dadis_data = response.json()['results'][0]
+
+    else:
+        raise Exception(response.json())
+
+    # return dadis data to complete organism insert
+    logger.debug(dadis_data)
+
+    return dadis_data
 
 
 # a function to get back fao metadata
@@ -138,18 +204,14 @@ def process_record(commonnames2species):
 
 if __name__ == "__main__":
     # start a session with CDP
-    session = requests.Session()
-    session.auth = ('admin', IMPORT_PASSWORD)
+    SESSION = requests.Session()
+    SESSION.auth = ('admin', IMPORT_PASSWORD)
 
-    # get species2common name translation
-    commonnames2species = get_species2commonname(session)
+    # get species to common names
+    SPECIES2COMMON, COMMON2SPECIES = get_species2commonname()
 
     # get data from FAO files and post to CDP
-    for record in process_record(commonnames2species):
-        response = session.post(BACKEND_URL + '/dadis_link/', json=record)
-
-        if response.status_code != 201:
-            logger.warning(response.text)
-
-        else:
-            logger.debug("f{record} added to CDP")
+    for record in process_record(COMMON2SPECIES):
+        # TODO: need to get all organism by species scientific name, country and supplied breed
+        print(record)
+        break
