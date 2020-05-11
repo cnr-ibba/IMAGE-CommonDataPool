@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.utils import model_meta
 
 from .models import (
     SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
@@ -122,6 +123,44 @@ class SpecimensSerializer(serializers.HyperlinkedModelSerializer):
             SampleDataInfo.objects.create(sample=sample, **specimen)
         return sample
 
+    def __update_instance(self, instance, validated_data):
+        # ok update SampleInfo
+        info = model_meta.get_field_info(instance)
+
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                field = getattr(instance, attr)
+                field.set(value)
+            else:
+                setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        specimens_data = validated_data.pop('specimens', None)
+
+        # ok update SampleInfo
+        instance = self.__update_instance(instance, validated_data)
+
+        if specimens_data:
+            # Ok delete all AnimalInfo related objects
+            # HINT: will be simpler with a One2One relationship
+            instance.specimens.all().delete()
+
+            # now process organism
+            for specimen_data in specimens_data:
+                # recreate info
+                SampleDataInfo.objects.create(
+                    sample=instance, **specimen_data)
+
+        return instance
+
 
 class SpecimensSerializerShort(serializers.ModelSerializer):
     specimens = SampleDataInfoSerializerShort(many=True)
@@ -178,6 +217,52 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
             AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
 
         return sample
+
+    def __update_instance(self, instance, validated_data):
+        # ok update SampleInfo
+        info = model_meta.get_field_info(instance)
+
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                field = getattr(instance, attr)
+                field.set(value)
+            else:
+                setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        organisms_data = validated_data.pop('organisms', None)
+
+        # ok update SampleInfo
+        instance = self.__update_instance(instance, validated_data)
+
+        if organisms_data:
+            # Ok delete all AnimalInfo related objects
+            # HINT: will be simpler with a One2One relationship
+            instance.organisms.all().delete()
+
+            # now process organism
+            for organism_data in organisms_data:
+                # not sure about this
+                dadis_data = organism_data.pop('dadis', None)
+
+                if dadis_data:
+                    dadis = DADISLink.get_instance_from_dict(dadis_data)
+                else:
+                    dadis = None
+
+                # recreate info
+                AnimalInfo.objects.create(
+                    dadis=dadis, sample=instance, **organism_data)
+
+        return instance
 
 
 class OrganismsSerializerShort(serializers.ModelSerializer):
