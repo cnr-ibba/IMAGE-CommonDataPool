@@ -467,45 +467,11 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class SpecimensDetailsView(generics.RetrieveDestroyAPIView):
+class SpecimensDetailsView(generics.RetrieveUpdateDestroyAPIView):
     queryset = SampleInfo.objects.all()
+    lookup_field = "data_source_id"
     serializer_class = SpecimensSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    def get(self, request, *a, **kw):
-        try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            return Response(SpecimensSerializer(
-                organism, context={'request': request}).data)
-
-        except SampleInfo.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Organism with id: {} does not exist".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-    def delete(self, request, *a, **kw):
-        try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            organism.delete()
-            return Response(
-                data={
-                    "message": "Specimen with id: {} was deleted".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_202_ACCEPTED
-            )
-        except SampleInfo.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Specimen with id: {} does not exist".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
 
 
 class ListOrganismsView(generics.ListCreateAPIView):
@@ -593,46 +559,6 @@ class OrganismsDetailsView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = "data_source_id"
     serializer_class = OrganismsSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    # TODO: simplify this and text IMAGE-Portal
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-
-        except Http404:
-            return Response(
-                data={
-                    "message": "Organism with id: {} does not exist".format(
-                        kwargs[self.lookup_field])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-
-        except Http404:
-            return Response(
-                data={
-                    "message": "Organism with id: {} does not exist".format(
-                        kwargs[self.lookup_field])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        self.perform_destroy(instance)
-
-        # Set a custom message
-        data = {
-            "message": "Organism with id: {} was deleted".format(
-                kwargs[self.lookup_field])
-        }
-
-        return Response(data=data,  status=status.HTTP_202_ACCEPTED)
 
 
 class ListCreateFilesView(generics.ListCreateAPIView):
