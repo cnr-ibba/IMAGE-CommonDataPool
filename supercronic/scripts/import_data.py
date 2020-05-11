@@ -57,9 +57,22 @@ def post_organism(record):
     response = SESSION.post(f'{BACKEND_URL}/organism/', json=record)
 
     if response.status_code != 201:
-        # logger.error(response.text)
-        logger.error(record)
-        raise Exception(response.text[-200:])
+        logger.error(response.text[-200:])
+
+
+def put_organism(biosample_id, record):
+    """Put a single organism"""
+
+    global SESSION
+
+    logger.debug(record)
+
+    url = f"{BACKEND_URL}/organism/{biosample_id}/"
+
+    response = SESSION.put(url, json=record)
+
+    if response.status_code != 200:
+        logger.error(response.text[-200:])
 
 
 def post_specimen(record):
@@ -70,7 +83,22 @@ def post_specimen(record):
     response = SESSION.post(f'{BACKEND_URL}/specimen/', json=record)
 
     if response.status_code != 201:
-        logger.error(response.text)
+        logger.error(response.text[-200:])
+
+
+def put_specimen(biosample_id, record):
+    """Put a single specimen"""
+
+    global SESSION
+
+    logger.debug(record)
+
+    url = f"{BACKEND_URL}/specimen/{biosample_id}/"
+
+    response = SESSION.put(url, json=record)
+
+    if response.status_code != 200:
+        logger.error(response.text[-200:])
 
 
 def import_data(force=False):
@@ -166,17 +194,12 @@ def update_organism_record(biosample_id, organisms_data, organisms_idx):
     :param organisms_idx: dictionary with biosample_id -> position
     """
 
-    global SESSION
+    # get positions from dict indexes
+    idx = organisms_idx[biosample_id]
+    record = organisms_data[idx]
+    logger.info(f"Update {biosample_id}")
 
-    response = SESSION.delete(f"{BACKEND_URL}/organism/{biosample_id}")
-
-    if response.status_code != 204:
-        logger.error(response.text)
-
-    add_single_record(
-        biosample_id,
-        organisms_data=organisms_data,
-        organisms_idx=organisms_idx)
+    put_organism(biosample_id, record)
 
 
 def update_specimen_record(biosample_id, specimens_data, specimens_idx):
@@ -187,17 +210,12 @@ def update_specimen_record(biosample_id, specimens_data, specimens_idx):
     :param specimens_idx: dictionary with biosample_id -> position
     """
 
-    global SESSION
+    # get positions from dict indexes
+    idx = specimens_idx[biosample_id]
+    record = specimens_data[idx]
+    logger.info(f"Update {biosample_id}")
 
-    response = SESSION.delete(f"{BACKEND_URL}/specimen/{biosample_id}")
-
-    if response.status_code != 204:
-        logger.error(response.text)
-
-    add_single_record(
-        biosample_id,
-        specimens_data=specimens_data,
-        specimens_idx=specimens_idx)
+    put_specimen(biosample_id, record)
 
 
 def read_biosample_etags():
