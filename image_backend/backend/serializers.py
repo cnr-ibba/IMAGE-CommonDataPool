@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
-from .models import SampleInfo, AnimalInfo, SampleDataInfo, Files
+from .models import (
+    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
+    DADISLink)
 
 
 class FilesSerializer(serializers.ModelSerializer):
@@ -13,18 +15,19 @@ class FilesSerializer(serializers.ModelSerializer):
 class SampleDataInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = SampleDataInfo
-        fields = ('derived_from', 'collection_place_accuracy', 'organism_part',
-                  'organism_part_ontology', 'specimen_collection_protocol',
-                  'collection_date', 'collection_date_unit',
-                  'collection_place_latitude', 'collection_place_latitude_unit',
-                  'collection_place_longitude',
-                  'collection_place_longitude_unit', 'collection_place',
-                  'developmental_stage', 'developmental_stage_ontology',
-                  'physiological_stage', 'physiological_stage_ontology',
-                  'availability', 'sample_storage', 'sample_storage_processing',
-                  'animal_age_at_collection', 'animal_age_at_collection_unit',
-                  'sampling_to_preparation_interval',
-                  'sampling_to_preparation_interval_unit')
+        fields = (
+            'derived_from', 'collection_place_accuracy', 'organism_part',
+            'organism_part_ontology', 'specimen_collection_protocol',
+            'collection_date', 'collection_date_unit',
+            'collection_place_latitude', 'collection_place_latitude_unit',
+            'collection_place_longitude',
+            'collection_place_longitude_unit', 'collection_place',
+            'developmental_stage', 'developmental_stage_ontology',
+            'physiological_stage', 'physiological_stage_ontology',
+            'availability', 'sample_storage', 'sample_storage_processing',
+            'animal_age_at_collection', 'animal_age_at_collection_unit',
+            'sampling_to_preparation_interval',
+            'sampling_to_preparation_interval_unit')
 
 
 class SampleDataInfoSerializerShort(serializers.ModelSerializer):
@@ -34,7 +37,41 @@ class SampleDataInfoSerializerShort(serializers.ModelSerializer):
                   'collection_place_latitude', 'collection_place_longitude')
 
 
+class Species2CommonNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Species2CommonName
+        fields = ('scientific_name', 'common_name')
+
+
+class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
+    species = Species2CommonNameSerializer(many=False, read_only=False)
+
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:dadis_link-detail',
+        lookup_field='pk'
+    )
+
+    class Meta:
+        model = DADISLink
+        fields = (
+            'url',
+            'species',
+            'supplied_breed',
+            'efabis_breed_country',
+            'dadis_url',
+        )
+
+    def create(self, validated_data):
+        species = validated_data.pop('species')
+        species_obj = Species2CommonName.objects.get(**species)
+        dadis = DADISLink.objects.create(species=species_obj, **validated_data)
+
+        return dadis
+
+
 class AnimalInfoSerializer(serializers.ModelSerializer):
+    dadis = DADISLinkSerializer(many=False, required=False, allow_null=True)
+
     class Meta:
         model = AnimalInfo
         fields = ('supplied_breed', 'efabis_breed_country', 'sex',
@@ -42,7 +79,9 @@ class AnimalInfoSerializer(serializers.ModelSerializer):
                   'mapped_breed_ontology', 'birth_date', 'birth_date_unit',
                   'birth_location', 'birth_location_longitude',
                   'birth_location_longitude_unit', 'birth_location_latitude',
-                  'birth_location_latitude_unit', 'child_of', 'specimens')
+                  'birth_location_latitude_unit', 'child_of', 'specimens',
+                  'dadis')
+        read_only_fields = ['dadis']
 
 
 class AnimalInfoSerializerShort(serializers.ModelSerializer):
@@ -52,12 +91,17 @@ class AnimalInfoSerializerShort(serializers.ModelSerializer):
                   'birth_location_longitude', 'birth_location_latitude')
 
 
-class SpecimensSerializer(serializers.ModelSerializer):
+class SpecimensSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:specimendetail',
+        lookup_field='data_source_id'
+    )
+
     specimens = SampleDataInfoSerializer(many=True)
 
     class Meta:
         model = SampleInfo
-        fields = ('data_source_id', 'alternative_id', 'project',
+        fields = ('url', 'data_source_id', 'alternative_id', 'project',
                   'submission_title', 'material', 'material_ontology',
                   'person_last_name', 'person_email', 'person_affiliation',
                   'person_role', 'person_role_ontology', 'organization_name',
@@ -94,12 +138,17 @@ class SpecimensSerializerShort(serializers.ModelSerializer):
         return sample
 
 
-class OrganismsSerializer(serializers.ModelSerializer):
+class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:organismdetail',
+        lookup_field='data_source_id'
+    )
+
     organisms = AnimalInfoSerializer(many=True)
 
     class Meta:
         model = SampleInfo
-        fields = ('data_source_id', 'alternative_id', 'project',
+        fields = ('url', 'data_source_id', 'alternative_id', 'project',
                   'submission_title', 'material', 'material_ontology',
                   'person_last_name', 'person_email', 'person_affiliation',
                   'person_role', 'person_role_ontology', 'organization_name',
@@ -116,8 +165,18 @@ class OrganismsSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         organisms_data = validated_data.pop('organisms')
         sample = SampleInfo.objects.create(**validated_data)
+
         for organism in organisms_data:
-            AnimalInfo.objects.create(sample=sample, **organism)
+            # need to get cut the dadis attribute
+            dadis_data = organism.pop('dadis', None)
+
+            if dadis_data:
+                dadis = DADISLink.get_instance_from_dict(dadis_data)
+            else:
+                dadis = None
+
+            AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
+
         return sample
 
 

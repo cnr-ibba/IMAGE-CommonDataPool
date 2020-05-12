@@ -1,16 +1,67 @@
-import json
+
 import math
 
 from django.http import JsonResponse, HttpResponse
 from rest_framework import generics, permissions, filters
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from rest_framework.views import status
+from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SampleInfo, Files
-from .serializers import SpecimensSerializer, OrganismsSerializer, \
-    OrganismsSerializerShort, SpecimensSerializerShort, FilesSerializer
+from .models import SampleInfo, Files, Species2CommonName, DADISLink
+from .serializers import (
+    SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
+    SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer,
+    DADISLinkSerializer)
+
+
+@api_view(['GET'])
+def backend_root(request, format=None):
+
+    def construct_reponse(params):
+        """
+        Define a dictionary of response from a dictionary of parameters,
+        where keys are locations and values are names (as defined in
+        backend.urls)
+        """
+
+        result = dict()
+        base_url = "/data_portal/backend/"
+        app_name = "backend"
+
+        for path, name in params.items():
+            result[base_url+path] = reverse(
+                ":".join([app_name, name]),
+                request=request,
+                format=format)
+
+        return result
+
+    # this is my parameters dictionary. The detail pages are not displayed
+    data = {
+        "organism/": "organismindex",
+        "organism_short/": "organismindex_short",
+        "organism/summary/": "organism_summary",
+        "organism/graphical_summary/": "organism_graphical_summary",
+        "organism/gis_search/": "organism_gis_search",
+        "organism/download/": "organism_download",
+        'specimen/': 'specimenindex',
+        'specimen_short/': 'specimenindex_short',
+        'specimen/summary/': 'specimen_summary',
+        'specimen/graphical_summary/': 'specimens_graphical_summary',
+        'specimen/gis_search/': 'specimen_gis_search',
+        'specimen/download/': 'specimen_download',
+        'file/': 'fileindex',
+        'file/download/': 'file_download',
+        'species/': 'species',
+        'dadis_link': 'dadis_link'
+    }
+
+    # combine data in order to have a correct response
+    return Response(construct_reponse(data))
 
 
 def get_organisms_summary(request):
@@ -102,7 +153,8 @@ def organisms_gis_search(request):
                                 organisms__birth_location_latitude='')
     for record in organisms:
         organism = record.organisms.get()
-        organism_latitude = convert_to_radians(organism.birth_location_latitude)
+        organism_latitude = convert_to_radians(
+            organism.birth_location_latitude)
         organism_longitude = convert_to_radians(
             organism.birth_location_longitude)
         if math.acos(math.sin(latitude) * math.sin(organism_latitude) +
@@ -250,7 +302,7 @@ class LargeResultsSetPagination(PageNumberPagination):
     max_page_size = 1000000
 
 
-class ListCreateSpecimensView(generics.ListCreateAPIView):
+class ListSpecimensView(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -258,7 +310,8 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
-                     'person_role', 'person_role_ontology', 'organization_name',
+                     'person_role', 'person_role_ontology',
+                     'organization_name',
                      'organization_role', 'organization_role_ontology',
                      'gene_bank_name', 'gene_bank_country',
                      'gene_bank_country_ontology', 'data_source_type',
@@ -295,7 +348,8 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
         return SampleInfo.objects.filter(specimens__isnull=False)
 
     def post(self, request, *args, **kwargs):
-        serializer = SpecimensSerializer(data=request.data)
+        serializer = SpecimensSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -303,7 +357,7 @@ class ListCreateSpecimensView(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
+class ListSpecimensViewShort(generics.ListCreateAPIView):
     serializer_class = SpecimensSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -326,45 +380,48 @@ class ListCreateSpecimensViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class SpecimensDetailsView(generics.RetrieveAPIView):
+class SpecimensDetailsView(generics.RetrieveDestroyAPIView):
     queryset = SampleInfo.objects.all()
     serializer_class = SpecimensSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['specimen_id'])
-            return Response(SpecimensSerializer(organism).data)
-        except:
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
+            return Response(SpecimensSerializer(
+                organism, context={'request': request}).data)
+
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['specimen_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
     def delete(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['specimen_id'])
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
             organism.delete()
             return Response(
                 data={
                     "message": "Specimen with id: {} was deleted".format(
-                        kw['specimen_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_202_ACCEPTED
             )
-        except:
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Specimen with id: {} does not exist".format(
-                        kw['specimen_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
 
-class ListCreateOrganismsView(generics.ListCreateAPIView):
+class ListOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -372,7 +429,8 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
-                     'person_role', 'person_role_ontology', 'organization_name',
+                     'person_role', 'person_role_ontology',
+                     'organization_name',
                      'organization_role', 'organization_role_ontology',
                      'gene_bank_name', 'gene_bank_country',
                      'gene_bank_country_ontology', 'data_source_type',
@@ -400,7 +458,8 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
         return SampleInfo.objects.filter(organisms__isnull=False)
 
     def post(self, request, *args, **kwargs):
-        serializer = OrganismsSerializer(data=request.data)
+        serializer = OrganismsSerializer(
+            data=request.data,  context={'request': request})
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -408,7 +467,7 @@ class ListCreateOrganismsView(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
+class ListOrganismsViewShort(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -417,8 +476,8 @@ class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
     filterset_fields = ['species', 'organisms__supplied_breed',
                         'organisms__sex']
     search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
-    ordering_fields = ['data_source_id', 'species', 'organisms__supplied_breed',
-                       'organisms__sex']
+    ordering_fields = ['data_source_id', 'species',
+                       'organisms__supplied_breed', 'organisms__sex']
 
     def get_queryset(self):
         return SampleInfo.objects.filter(organisms__isnull=False)
@@ -432,39 +491,42 @@ class ListCreateOrganismsViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class OrganismsDetailsView(generics.RetrieveAPIView):
+class OrganismsDetailsView(generics.RetrieveDestroyAPIView):
     queryset = SampleInfo.objects.all()
     serializer_class = OrganismsSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['organism_id'])
-            return Response(OrganismsSerializer(organism).data)
-        except:
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
+            return Response(OrganismsSerializer(
+                organism, context={'request': request}).data)
+
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['organism_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
     def delete(self, request, *a, **kw):
         try:
-            organism = self.queryset.get(data_source_id=kw['organism_id'])
+            organism = self.queryset.get(data_source_id=kw['data_source_id'])
             organism.delete()
             return Response(
                 data={
                     "message": "Organism with id: {} was deleted".format(
-                        kw['organism_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_202_ACCEPTED
             )
-        except:
+        except SampleInfo.DoesNotExist:
             return Response(
                 data={
                     "message": "Organism with id: {} does not exist".format(
-                        kw['organism_id'])
+                        kw['data_source_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
@@ -510,7 +572,7 @@ class FilesDetailsView(generics.RetrieveAPIView):
         try:
             file = self.queryset.get(data_source_id=kw['specimen_id'])
             return Response(FilesSerializer(file).data)
-        except:
+        except Files.DoesNotExist:
             return Response(
                 data={
                     "message": "File with id: {} does not exist".format(
@@ -525,16 +587,39 @@ class FilesDetailsView(generics.RetrieveAPIView):
             file.delete()
             return Response(
                 data={
-                    "message": "Specimen with id: {} was deleted".format(
+                    "message": "File with id: {} was deleted".format(
                         kw['specimen_id'])
                 },
                 status=status.HTTP_202_ACCEPTED
             )
-        except:
+        except Files.DoesNotExist:
             return Response(
                 data={
-                    "message": "Specimen with id: {} does not exist".format(
+                    "message": "File with id: {} does not exist".format(
                         kw['specimen_id'])
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class SpeciesToCommonNameViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    This viewset automatically provides `list` and `detail` actions.
+    """
+    queryset = Species2CommonName.objects.all()
+    serializer_class = Species2CommonNameSerializer
+
+
+class DADISLinkViewSet(viewsets.ModelViewSet):
+    """
+    Update DADIS table
+    """
+
+    queryset = DADISLink.objects.all()
+    serializer_class = DADISLinkSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = LargeResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        'species__common_name', 'species__scientific_name', 'supplied_breed',
+        'efabis_breed_country']

@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import requests
 
-from common import rotate_file, ETAG_FILE
+from common import rotate_file, ETAG_FILE, PAGE_SIZE
 
 # Global variables
 ETAG = []
@@ -10,7 +10,7 @@ ETAG_IDS = []
 
 
 def main():
-    biosample_ids = fetch_biosample_ids()['_embedded']['accessions']
+    biosample_ids = fetch_biosample_ids()
     asyncio.get_event_loop().run_until_complete(fetch_all_etags(biosample_ids))
     if len(biosample_ids) != len(ETAG_IDS):
         for my_id in biosample_ids:
@@ -39,9 +39,21 @@ async def fetch_etag(session, my_id):
     ETAG_IDS.append(my_id)
 
 
+# TODO: implement with async stuff
 def fetch_biosample_ids():
-    return requests.get("https://www.ebi.ac.uk/biosamples/accessions?"
-                        "size=100000&filter=attr:project:IMAGE").json()
+    """Return a list of biosample ids for IMAGE project"""
+
+    results = requests.get(
+        f"https://www.ebi.ac.uk/biosamples/accessions?"
+        f"size={PAGE_SIZE}&filter=attr:project:IMAGE").json()
+
+    accessions = results['_embedded']['accessions']
+
+    while 'next' in results['_links']:
+        results = requests.get(results['_links']['next']['href']).json()
+        accessions.extend(results['_embedded']['accessions'])
+
+    return accessions
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 aiohttp
 asyncio
 requests
+ipython
 python-decouple
 click

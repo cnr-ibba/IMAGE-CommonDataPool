@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 ETAG_FILE = "etag_list.csv"
 FETCH_BIOSAMPLE_LOG_FILE = "fetch_biosamples.log"
 
+# default page size
+PAGE_SIZE = 1000
+
 
 # from https://bitbucket.org/russellballestrini/virt-back
 def rotate_file(target, retention=7):

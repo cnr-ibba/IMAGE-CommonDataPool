@@ -1,5 +1,12 @@
  FROM python:3.8
 
+ # Install dependencies
+ RUN apt-get update && apt-get install -y --no-install-recommends \
+     postgresql-client && \
+     apt-get clean && \
+     apt-get autoclean && \
+     rm -rf /var/lib/apt/lists/*
+
  RUN mkdir /code
  WORKDIR /code
 
