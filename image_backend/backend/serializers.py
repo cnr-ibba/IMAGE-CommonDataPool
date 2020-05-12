@@ -206,6 +206,7 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
             # need to get cut the dadis attribute
             dadis_data = organism.pop('dadis', None)
 
+            # TODO: create a new DADIS object
             if dadis_data:
                 dadis = DADISLink.get_instance_from_dict(dadis_data)
             else:

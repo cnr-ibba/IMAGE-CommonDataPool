@@ -55,49 +55,28 @@ def get_species2commonname():
 
 
 def fill_dadis(record):
-    global SPECIES2COMMON, SESSION
-
-    scientific_name = record['species']
-
-    if scientific_name not in SPECIES2COMMON:
-        # this species hasn't a coorrespondance in species tables, so
-        # I can't provide a link for dadis
-        logger.error(f"'{scientific_name}' is not modelled for DADIS")
-        return
-
-    common_name = SPECIES2COMMON[scientific_name]
-
-    # contruct a species dictionary
-    species = {
-        'common_name': common_name,
-        'scientific_name': scientific_name}
-
-    # now create a dictionary for my object
-    data = {
-        'species': species,
-        'supplied_breed': record['organisms'][0]['supplied_breed'],
-        'efabis_breed_country': record['organisms'][0]['efabis_breed_country']
-    }
+    global SESSION
 
     # check if record exists
-    response = SESSION.get(BACKEND_URL + "/dadis_link/", params=data)
+    response = SESSION.get(BACKEND_URL + "/dadis_link/", params=record)
 
     dadis_data = None
 
     if response.json()['count'] == 0:
+        # create object if doesn't exists
         response = SESSION.post(
             BACKEND_URL + '/dadis_link/',
-            json=data)
+            json=record)
 
         if response.status_code != 201:
-            raise Exception(f"Cannot set {data}")
+            raise Exception(f"Cannot set {record}")
 
         else:
-            logger.debug(f"{data} added to CDP")
+            logger.debug(f"{record} added to CDP")
             dadis_data = response.json()
 
     elif response.json()['count'] == 1:
-        logger.debug(f"{data} already in CDP")
+        logger.debug(f"{record} already in CDP")
         dadis_data = response.json()['results'][0]
 
     else:
@@ -210,8 +189,74 @@ if __name__ == "__main__":
     # get species to common names
     SPECIES2COMMON, COMMON2SPECIES = get_species2commonname()
 
+    # get info from summary method
+    response = SESSION.get(BACKEND_URL + "/organism/summary/")
+    summary = response.json()
+
     # get data from FAO files and post to CDP
     for record in process_record(COMMON2SPECIES):
-        # TODO: need to get all organism by species scientific name, country and supplied breed
-        print(record)
+        # filter agains my countries
+        if record['efabis_breed_country'] not in summary['country']:
+            logger.debug("Skipping %s: Country not in CDP" % record)
+            continue
+
+        # get params to do filtering
+        params = {
+            'species': record['species']['scientific_name'],
+            'organisms__efabis_breed_country': record['efabis_breed_country'],
+            # case insensitive search for supplied breed
+            'search': record['supplied_breed'],
+        }
+
+        # need to get all organism by species scientific name, country and
+        # supplied breed
+        response = SESSION.get(BACKEND_URL + "/organism/", params=params)
+        response_data = response.json()
+
+        if response_data['count'] == 0:
+            logger.debug("Skipping %s: Breed not in CDP" % record)
+            continue
+
+        logger.info("Got %s records for %s" % (
+            response_data['count'], params))
+
+        # ok search CDP for DADIS record or create a new one
+        dadis = fill_dadis(record)
+
+        # Ok take results and append considering pagination
+        organisms = response_data['results']
+
+        while response_data['next']:
+            response = SESSION.get(response_data['next'])
+            response_data = response.json()
+            organisms.append(response_data['results'])
+
+        # now update organisms dadis record
+        for organism in response_data['results']:
+            # test for dadis link
+            if organism['organisms'][0]['dadis']:
+                logger.debug(
+                    "Skipping %s: dadis link already set" % (
+                        organism['data_source_id']))
+                continue
+
+            # get the unique URL
+            url = organism['url']
+
+            # define data to patch
+            data = {
+                'organisms': [{'dadis': dadis}]
+            }
+
+            logger.debug("Patching %s" % url)
+
+            # patch object
+            response = SESSION.patch(url, json=data)
+
+            if response.status_code != 200:
+                logger.error(response.text)
+
+        # block for a single record
         break
+
+    # cicle for all records in dadis table
