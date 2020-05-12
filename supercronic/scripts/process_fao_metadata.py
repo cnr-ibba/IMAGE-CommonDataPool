@@ -217,7 +217,7 @@ if __name__ == "__main__":
             logger.debug("Skipping %s: Breed not in CDP" % record)
             continue
 
-        logger.info("Got %s records for %s" % (
+        logger.debug("Got %s records for %s" % (
             response_data['count'], params))
 
         # ok search CDP for DADIS record or create a new one
@@ -229,10 +229,13 @@ if __name__ == "__main__":
         while response_data['next']:
             response = SESSION.get(response_data['next'])
             response_data = response.json()
-            organisms.append(response_data['results'])
+            organisms += response_data['results']
+
+        # count how many insert I did
+        counter = 0
 
         # now update organisms dadis record
-        for organism in response_data['results']:
+        for organism in organisms:
             # test for dadis link
             if organism['organisms'][0]['dadis']:
                 logger.debug(
@@ -256,7 +259,10 @@ if __name__ == "__main__":
             if response.status_code != 200:
                 logger.error(response.text)
 
+            counter += 1
+
         # block for a single record
-        break
+        if counter > 0:
+            logger.info("Updated %s record for %s" % (counter, dadis))
 
     # cicle for all records in dadis table
