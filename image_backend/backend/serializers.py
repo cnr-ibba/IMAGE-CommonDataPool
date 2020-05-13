@@ -205,12 +205,14 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
         for organism in organisms_data:
             # need to get cut the dadis attribute
             dadis_data = organism.pop('dadis', None)
+            dadis = None
 
-            # TODO: create a new DADIS object
+            # create a new DADIS object
             if dadis_data:
-                dadis = DADISLink.get_instance_from_dict(dadis_data)
-            else:
-                dadis = None
+                species = dadis_data.pop('species')
+                species_obj = Species2CommonName.objects.get(**species)
+                dadis, _ = DADISLink.objects.get_or_create(
+                    species=species_obj, **dadis_data)
 
             AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
 
@@ -252,8 +254,16 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
             # update organism
             organism = self.__update_instance(organism, organism_data)
 
+            # create a new DADIS object if necessary and update instance
             if dadis_data:
-                dadis = DADISLink.get_instance_from_dict(dadis_data)
+                species = dadis_data.pop('species')
+                species_obj = Species2CommonName.objects.get(**species)
+
+                # get or create a DADis object
+                dadis, _ = DADISLink.objects.get_or_create(
+                    species=species_obj, **dadis_data)
+
+                # track relationship with dadis
                 organism.dadis = dadis
                 organism.save()
 

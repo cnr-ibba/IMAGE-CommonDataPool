@@ -54,40 +54,6 @@ def get_species2commonname():
     return species2commonnames, commonnames2species
 
 
-def fill_dadis(record):
-    global SESSION
-
-    # check if record exists
-    response = SESSION.get(BACKEND_URL + "/dadis_link/", params=record)
-
-    dadis_data = None
-
-    if response.json()['count'] == 0:
-        # create object if doesn't exists
-        response = SESSION.post(
-            BACKEND_URL + '/dadis_link/',
-            json=record)
-
-        if response.status_code != 201:
-            raise Exception(f"Cannot set {record}")
-
-        else:
-            logger.debug(f"{record} added to CDP")
-            dadis_data = response.json()
-
-    elif response.json()['count'] == 1:
-        logger.debug(f"{record} already in CDP")
-        dadis_data = response.json()['results'][0]
-
-    else:
-        raise Exception(response.json())
-
-    # return dadis data to complete organism insert
-    logger.debug(dadis_data)
-
-    return dadis_data
-
-
 # a function to get back fao metadata
 def get_metadata(filename="Report_Export_Data.csv"):
     pattern = re.compile(r"(.*)_\((.*)\)_?(.*)")
@@ -199,23 +165,23 @@ if __name__ == "__main__":
     summary_breeds = [breed.lower() for breed in summary['breed']]
 
     # get data from FAO files and post to CDP
-    for record in process_record(COMMON2SPECIES):
+    for dadis in process_record(COMMON2SPECIES):
         # filter agains my countries
-        if record['efabis_breed_country'] not in summary['country']:
-            logger.debug("Skipping %s: Country not in CDP" % record)
+        if dadis['efabis_breed_country'] not in summary['country']:
+            logger.debug("Skipping %s: Country not in CDP" % dadis)
             continue
 
         # filter also by breeds in summary
-        if record['supplied_breed'].lower() not in summary_breeds:
-            logger.debug("Skipping %s: Breed not in CDP" % record)
+        if dadis['supplied_breed'].lower() not in summary_breeds:
+            logger.debug("Skipping %s: Breed not in CDP" % dadis)
             continue
 
         # get params to do filtering
         params = {
-            'species': record['species']['scientific_name'],
-            'organisms__efabis_breed_country': record['efabis_breed_country'],
+            'species': dadis['species']['scientific_name'],
+            'organisms__efabis_breed_country': dadis['efabis_breed_country'],
             # case insensitive search for supplied breed
-            'search': record['supplied_breed'],
+            'search': dadis['supplied_breed'],
         }
 
         # need to get all organism by species scientific name, country and
@@ -224,14 +190,11 @@ if __name__ == "__main__":
         response_data = response.json()
 
         if response_data['count'] == 0:
-            logger.debug("Skipping %s: Breed not in CDP" % record)
+            logger.debug("Skipping %s: Breed not in CDP" % dadis)
             continue
 
         logger.debug("Got %s records for %s" % (
             response_data['count'], params))
-
-        # ok search CDP for DADIS record or create a new one
-        dadis = fill_dadis(record)
 
         # Ok take results and append considering pagination
         organisms = response_data['results']
