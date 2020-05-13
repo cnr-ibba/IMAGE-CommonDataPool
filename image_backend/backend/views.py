@@ -2,7 +2,6 @@
 import math
 
 from django.http import HttpResponse
-from django.http.response import Http404
 from django.db.models import Count
 
 from rest_framework import generics, permissions, filters
@@ -468,7 +467,10 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
 
 
 class SpecimensDetailsView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = SampleInfo.objects.all()
+    # since we are searching with sampleinfo, I need to return only entries
+    # with a relationship with SampleDataInfo (specimens)
+    queryset = SampleInfo.objects.prefetch_related(
+        'specimens').filter(specimens__isnull=False)
     lookup_field = "data_source_id"
     serializer_class = SpecimensSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -555,7 +557,10 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
 
 
 class OrganismsDetailsView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = SampleInfo.objects.all()
+    # since we are searching with sampleinfo, I need to return only entries
+    # with a relationship with AnimalInfo (organisms)
+    queryset = SampleInfo.objects.prefetch_related(
+        'organisms').filter(organisms__isnull=False)
     lookup_field = "data_source_id"
     serializer_class = OrganismsSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
