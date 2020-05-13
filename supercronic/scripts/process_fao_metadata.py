@@ -182,6 +182,8 @@ def process_record(commonnames2species):
 
 
 if __name__ == "__main__":
+    logger.info("Starting process_fao_metadata")
+
     # start a session with CDP
     SESSION = requests.Session()
     SESSION.auth = ('admin', IMPORT_PASSWORD)
@@ -193,11 +195,19 @@ if __name__ == "__main__":
     response = SESSION.get(BACKEND_URL + "/organism/summary/")
     summary = response.json()
 
+    # get all breeds in an array, convert them into lowercase for comparison
+    summary_breeds = [breed.lower() for breed in summary['breed']]
+
     # get data from FAO files and post to CDP
     for record in process_record(COMMON2SPECIES):
         # filter agains my countries
         if record['efabis_breed_country'] not in summary['country']:
             logger.debug("Skipping %s: Country not in CDP" % record)
+            continue
+
+        # filter also by breeds in summary
+        if record['supplied_breed'].lower() not in summary_breeds:
+            logger.debug("Skipping %s: Breed not in CDP" % record)
             continue
 
         # get params to do filtering
@@ -266,3 +276,4 @@ if __name__ == "__main__":
             logger.info("Updated %s record for %s" % (counter, dadis))
 
     # cicle for all records in dadis table
+    logger.info("process_fao_metadata completed")
