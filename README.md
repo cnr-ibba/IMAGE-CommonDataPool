@@ -65,10 +65,11 @@ $ docker-compose run --rm djangoapp python manage.py dbshell
 
 # Special notes about links to dad-is interface
 
-Is not always possible to set a correct dad-is link. First of all, dad-is species
-uses the common names, while we track record with scientific names. In CDP there's
-and endpoint to track the common_name -> scientific_name conversion. This is
-used in import_data to construct the dad-is url which could be the same for all
-the organism with the same breed-specie-country. Not all dadis links are valid,
-maybe breeds are missing or not named in the same way. The callback for the dadis
-link will return a default page for species list.
+Dadis links were derived from DADIS data relying on breed, species and country.
+Download all data [from dadis](http://www.fao.org/dad-is/dataexport/en/), and place
+the download data as `Report_Export_Data.csv` file into the `data` folder of
+this project. Dad-is species uses the common names, while we track record with
+scientific names. In CDP there's an endpoint to track the relationship between
+common_name and scientific_name conversion. This is used in `process_fao_metadata.py`
+scripts to construct the dad-is url and relate the organism models by patching
+them using the `API`
