@@ -209,6 +209,18 @@ if __name__ == "__main__":
 
         # now update organisms dadis record
         for organism in organisms:
+            # since I'm searching for breed name (not exact) I need to filter
+            # out partial matches
+            if organism['organisms'][0]['supplied_breed'].lower() != \
+                    dadis['supplied_breed'].lower():
+                logger.warning("Skipping %s: breeds differ (%s:%s)" % (
+                    organism['data_source_id'],
+                    organism['organisms'][0]['supplied_breed'],
+                    dadis['supplied_breed'].lower()
+                    )
+                )
+                continue
+
             # test for dadis link
             if organism['organisms'][0]['dadis']:
                 logger.debug(
