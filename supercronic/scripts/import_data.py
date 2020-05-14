@@ -16,7 +16,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # a global variables
-SPECIES2COMMON = dict()
 SESSION = None
 
 
@@ -53,21 +52,27 @@ def post_organism(record):
 
     global SESSION
 
-    # ok, try to fill DADIS link table
-    dadis_data = fill_dadis(record)
-
-    # update record
-    if dadis_data:
-        record['organisms'][0]['dadis'] = dadis_data
-
     logger.debug(record)
 
     response = SESSION.post(f'{BACKEND_URL}/organism/', json=record)
 
     if response.status_code != 201:
-        # logger.error(response.text)
-        logger.error(record)
-        raise Exception(response.text[-200:])
+        logger.error(response.text[-200:])
+
+
+def put_organism(biosample_id, record):
+    """Put a single organism"""
+
+    global SESSION
+
+    logger.debug(record)
+
+    url = f"{BACKEND_URL}/organism/{biosample_id}/"
+
+    response = SESSION.put(url, json=record)
+
+    if response.status_code != 200:
+        logger.error(response.text[-200:])
 
 
 def post_specimen(record):
@@ -78,7 +83,22 @@ def post_specimen(record):
     response = SESSION.post(f'{BACKEND_URL}/specimen/', json=record)
 
     if response.status_code != 201:
-        logger.error(response.text)
+        logger.error(response.text[-200:])
+
+
+def put_specimen(biosample_id, record):
+    """Put a single specimen"""
+
+    global SESSION
+
+    logger.debug(record)
+
+    url = f"{BACKEND_URL}/specimen/{biosample_id}/"
+
+    response = SESSION.put(url, json=record)
+
+    if response.status_code != 200:
+        logger.error(response.text[-200:])
 
 
 def import_data(force=False):
@@ -174,17 +194,12 @@ def update_organism_record(biosample_id, organisms_data, organisms_idx):
     :param organisms_idx: dictionary with biosample_id -> position
     """
 
-    global SESSION
+    # get positions from dict indexes
+    idx = organisms_idx[biosample_id]
+    record = organisms_data[idx]
+    logger.info(f"Update {biosample_id}")
 
-    response = SESSION.delete(f"{BACKEND_URL}/organism/{biosample_id}")
-
-    if response.status_code != 202:
-        logger.error(response.text)
-
-    add_single_record(
-        biosample_id,
-        organisms_data=organisms_data,
-        organisms_idx=organisms_idx)
+    put_organism(biosample_id, record)
 
 
 def update_specimen_record(biosample_id, specimens_data, specimens_idx):
@@ -195,17 +210,12 @@ def update_specimen_record(biosample_id, specimens_data, specimens_idx):
     :param specimens_idx: dictionary with biosample_id -> position
     """
 
-    global SESSION
+    # get positions from dict indexes
+    idx = specimens_idx[biosample_id]
+    record = specimens_data[idx]
+    logger.info(f"Update {biosample_id}")
 
-    response = SESSION.delete(f"{BACKEND_URL}/specimen/{biosample_id}")
-
-    if response.status_code != 202:
-        logger.error(response.text)
-
-    add_single_record(
-        biosample_id,
-        specimens_data=specimens_data,
-        specimens_idx=specimens_idx)
+    put_specimen(biosample_id, record)
 
 
 def read_biosample_etags():
@@ -266,8 +276,10 @@ def read_data(file_type):
 
     if file_type == 'organisms':
         file_name = 'organisms.json'
+
     elif file_type == 'specimens':
         file_name = 'specimens.json'
+
     with open(file_name, 'r') as f:
         data = json.load(f)
 
@@ -282,81 +294,6 @@ def read_data(file_type):
     return data, data_idx
 
 
-# a function to get the list of common species from data_portal
-def get_species2commonname():
-    global SESSION
-
-    response = SESSION.get(BACKEND_URL + '/species/')
-
-    if response.status_code != 200:
-        raise Exception(response.text)
-
-    species2commonnames = dict()
-
-    for item in response.json():
-        scientific_name = item['scientific_name']
-        common_name = item['common_name']
-
-        species2commonnames[scientific_name] = common_name
-
-    return species2commonnames
-
-
-def fill_dadis(record):
-    global SPECIES2COMMON, SESSION
-
-    scientific_name = record['species']
-
-    if scientific_name not in SPECIES2COMMON:
-        # this species hasn't a coorrespondance in species tables, so
-        # I can't provide a link for dadis
-        logger.error(f"'{scientific_name}' is not modelled for DADIS")
-        return
-
-    common_name = SPECIES2COMMON[scientific_name]
-
-    # contruct a species dictionary
-    species = {
-        'common_name': common_name,
-        'scientific_name': scientific_name}
-
-    # now create a dictionary for my object
-    data = {
-        'species': species,
-        'supplied_breed': record['organisms'][0]['supplied_breed'],
-        'efabis_breed_country': record['organisms'][0]['efabis_breed_country']
-    }
-
-    # check if record exists
-    response = SESSION.get(BACKEND_URL + "/dadis_link/", params=data)
-
-    dadis_data = None
-
-    if response.json()['count'] == 0:
-        response = SESSION.post(
-            BACKEND_URL + '/dadis_link/',
-            json=data)
-
-        if response.status_code != 201:
-            raise Exception(f"Cannot set {data}")
-
-        else:
-            logger.debug(f"{data} added to CDP")
-            dadis_data = response.json()
-
-    elif response.json()['count'] == 1:
-        logger.debug(f"{data} already in CDP")
-        dadis_data = response.json()['results'][0]
-
-    else:
-        raise Exception(response.json())
-
-    # return dadis data to complete organism insert
-    logger.debug(dadis_data)
-
-    return dadis_data
-
-
 if __name__ == "__main__":
     # search for arguments
     args = parse_args()
@@ -364,9 +301,6 @@ if __name__ == "__main__":
     # start a session with CDP
     SESSION = requests.Session()
     SESSION.auth = (args.user, args.password)
-
-    # get species to common names
-    SPECIES2COMMON = get_species2commonname()
 
     # now import data
     import_data(args.force)

@@ -72,7 +72,11 @@ class SampleInfo(models.Model):
     gene_bank_country_ontology = models.CharField(max_length=1000)
     data_source_type = models.CharField(max_length=1000)
     data_source_version = models.CharField(max_length=1000)
-    species = models.CharField(max_length=1000)
+
+    species = models.CharField(
+        max_length=1000,
+        db_index=True)
+
     species_ontology = models.CharField(max_length=1000)
     etag = models.CharField(max_length=1000)
 
@@ -113,12 +117,17 @@ class Files(models.Model):
 
 class SampleDataInfo(models.Model):
     # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="specimens",
-                               on_delete=models.CASCADE)
+    sample = models.ForeignKey(
+        SampleInfo,
+        related_name="specimens",
+        on_delete=models.CASCADE)
+
     derived_from = models.CharField(max_length=1000)
     collection_place_accuracy = models.CharField(max_length=1000)
     organism_part = models.CharField(max_length=1000)
-    organism_part_ontology = models.CharField(max_length=1000)
+    organism_part_ontology = models.CharField(
+        max_length=1000,
+        db_index=True)
 
     # recommended
     specimen_collection_protocol = models.CharField(
@@ -150,6 +159,12 @@ class SampleDataInfo(models.Model):
                                                         blank=True)
     sampling_to_preparation_interval_unit = models.CharField(max_length=1000,
                                                              blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=[
+                'collection_place_latitude', 'collection_place_longitude']),
+        ]
 
 
 class ExperimentInfo(models.Model):
@@ -334,8 +349,11 @@ class DADISLink(models.Model):
 
 class AnimalInfo(models.Model):
     # mandatory
-    sample = models.ForeignKey(SampleInfo, related_name="organisms",
-                               on_delete=models.CASCADE)
+    sample = models.ForeignKey(
+        SampleInfo,
+        related_name="organisms",
+        on_delete=models.CASCADE)
+
     supplied_breed = models.CharField(max_length=1000)
     efabis_breed_country = models.CharField(max_length=1000)
     sex = models.CharField(max_length=1000)
@@ -368,3 +386,11 @@ class AnimalInfo(models.Model):
         null=True,
         blank=True,
         related_name="organisms")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['supplied_breed', 'efabis_breed_country']),
+            models.Index(fields=['efabis_breed_country']),
+            models.Index(fields=[
+                'birth_location_latitude', 'birth_location_longitude']),
+        ]

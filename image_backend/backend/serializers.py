@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.utils import model_meta
 
 from .models import (
     SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
@@ -122,6 +123,41 @@ class SpecimensSerializer(serializers.HyperlinkedModelSerializer):
             SampleDataInfo.objects.create(sample=sample, **specimen)
         return sample
 
+    def __update_instance(self, instance, validated_data):
+        # ok update SampleInfo
+        info = model_meta.get_field_info(instance)
+
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                field = getattr(instance, attr)
+                field.set(value)
+            else:
+                setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        specimens_data = validated_data.pop('specimens', None)
+
+        # ok update SampleInfo
+        instance = self.__update_instance(instance, validated_data)
+
+        if specimens_data:
+            # HACK: there will be only one specimen for each sample
+            specimen = instance.specimens.first()
+            specimen_data = specimens_data[0]
+
+            # update specimen
+            specimen = self.__update_instance(specimen, specimen_data)
+
+        return instance
+
 
 class SpecimensSerializerShort(serializers.ModelSerializer):
     specimens = SampleDataInfoSerializerShort(many=True)
@@ -169,15 +205,69 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
         for organism in organisms_data:
             # need to get cut the dadis attribute
             dadis_data = organism.pop('dadis', None)
+            dadis = None
 
+            # create a new DADIS object
             if dadis_data:
-                dadis = DADISLink.get_instance_from_dict(dadis_data)
-            else:
-                dadis = None
+                species = dadis_data.pop('species')
+                species_obj = Species2CommonName.objects.get(**species)
+                dadis, _ = DADISLink.objects.get_or_create(
+                    species=species_obj, **dadis_data)
 
             AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
 
         return sample
+
+    def __update_instance(self, instance, validated_data):
+        # ok update SampleInfo
+        info = model_meta.get_field_info(instance)
+
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                field = getattr(instance, attr)
+                field.set(value)
+            else:
+                setattr(instance, attr, value)
+
+        instance.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        organisms_data = validated_data.pop('organisms', None)
+
+        # ok update SampleInfo
+        instance = self.__update_instance(instance, validated_data)
+
+        if organisms_data:
+            # HACK: there will be only one organism for each sample
+            organism = instance.organisms.first()
+            organism_data = organisms_data[0]
+
+            # not sure about this
+            dadis_data = organism_data.pop('dadis', None)
+
+            # update organism
+            organism = self.__update_instance(organism, organism_data)
+
+            # create a new DADIS object if necessary and update instance
+            if dadis_data:
+                species = dadis_data.pop('species')
+                species_obj = Species2CommonName.objects.get(**species)
+
+                # get or create a DADis object
+                dadis, _ = DADISLink.objects.get_or_create(
+                    species=species_obj, **dadis_data)
+
+                # track relationship with dadis
+                organism.dadis = dadis
+                organism.save()
+
+        return instance
 
 
 class OrganismsSerializerShort(serializers.ModelSerializer):

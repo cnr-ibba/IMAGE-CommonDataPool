@@ -1,7 +1,9 @@
 
 import math
 
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
+from django.db.models import Count
+
 from rest_framework import generics, permissions, filters
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -11,7 +13,9 @@ from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SampleInfo, Files, Species2CommonName, DADISLink
+from .models import (
+    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
+    DADISLink)
 from .serializers import (
     SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
     SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer,
@@ -60,89 +64,138 @@ def backend_root(request, format=None):
         'dadis_link': 'dadis_link'
     }
 
+    # info for debug toolbar
+    print("IP Address for debug-toolbar: " + request.META['REMOTE_ADDR'])
+
     # combine data in order to have a correct response
     return Response(construct_reponse(data))
 
 
-def get_organisms_summary(request):
-    species = dict()
-    breed = dict()
-    sex = dict()
+@api_view(['GET'])
+def get_organisms_summary(request, format=None):
+    # get filters from get request
     species_filter = request.GET.get('species', False)
     breed_filter = request.GET.get('organisms__supplied_breed', False)
     sex_filter = request.GET.get('organisms__sex', False)
-    results = SampleInfo.objects.filter(organisms__isnull=False)
+    country_filter = request.GET.get('organisms__efabis_breed_country', False)
+
+    results = SampleInfo.objects.prefetch_related(
+        'organisms').filter(organisms__isnull=False)
+
+    # update queryset with filter submitted by GET
     if species_filter:
         results = results.filter(species=species_filter)
+
     if breed_filter:
         results = results.filter(organisms__supplied_breed=breed_filter)
+
     if sex_filter:
         results = results.filter(organisms__sex=sex_filter)
-    species_names = results.order_by().values_list(
-        'species', flat=True).distinct()
-    breed_names = results.order_by().values_list('organisms__supplied_breed',
-                                                 flat=True).distinct()
-    sex_names = results.order_by().values_list('organisms__sex',
-                                               flat=True).distinct()
-    for name in species_names:
-        species[name] = results.filter(species=name).count()
-    for name in breed_names:
-        breed[name] = results.filter(organisms__supplied_breed=name).count()
-    for name in sex_names:
-        sex[name] = results.filter(organisms__sex=name).count()
-    return JsonResponse(
-        {
-            'species': species,
-            'breed': breed,
-            'sex': sex
-        }
-    )
+
+    if country_filter:
+        results = results.filter(
+            organisms__efabis_breed_country=country_filter)
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    # count my items
+    species_count = count_items('species')
+    breeds_count = count_items('organisms__supplied_breed')
+    sex_count = count_items('organisms__sex')
+    country_count = count_items('organisms__efabis_breed_country')
+
+    return Response({
+        'species': species_count,
+        'breed': breeds_count,
+        'sex': sex_count,
+        'country': country_count
+    })
 
 
-def get_organisms_graphical_summary(request):
-    breeds = dict()
-    species = dict()
-    countries = dict()
+@api_view(['GET'])
+def get_organisms_graphical_summary(request, format=None):
+    """Return statistics for IMAGE-Portal summary page"""
+
+    # start queryset
+    results = AnimalInfo.objects.select_related("sample")
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    def count_breeds(results=results):
+        qs = results.values(
+            'sample__species',
+            'supplied_breed').annotate(
+                total=Count('sample__species')).order_by('-total')
+
+        count = dict()
+
+        # read count items
+        for item in qs:
+            species = item['sample__species']
+            breed = item['supplied_breed']
+            total = item['total']
+
+            if species not in count:
+                count.setdefault(species, dict())
+
+            count[species][breed] = total
+
+        return count
+
+    country_count = count_items('efabis_breed_country')
+    species_count = count_items('sample__species')
+    breeds_count = count_breeds()
+
     coordinates = list()
-    results = SampleInfo.objects.filter(organisms__isnull=False)
-    species_names = results.order_by().values_list('species',
-                                                   flat=True).distinct()
-    country_names = results.order_by().values_list(
-        'organisms__efabis_breed_country', flat=True).distinct()
-    organisms = results.exclude(organisms__birth_location_longitude='',
-                                organisms__birth_location_latitude='')
-    for name in species_names:
-        species[name] = results.filter(species=name).count()
-        breeds.setdefault(name, dict())
-        tmp = results.filter(species=name)
-        breeds_names = tmp.order_by().values_list('organisms__supplied_breed',
-                                                  flat=True).distinct()
-        for breed_name in breeds_names:
-            breeds[name][breed_name] = tmp.filter(
-                organisms__supplied_breed=breed_name).count()
-    for name in country_names:
-        countries[name] = results.filter(
-            organisms__efabis_breed_country=name).count()
-    for record in organisms:
-        organism = record.organisms.get()
-        coordinates.append((organism.birth_location_longitude,
-                            organism.birth_location_latitude))
-    return JsonResponse(
 
-        {
-            'species': species,
-            'breeds': breeds,
-            'countries': countries,
-            'coordinates': coordinates
-        }
-    )
+    organisms = results.exclude(
+        birth_location_longitude='',
+        birth_location_latitude='')
+
+    for organism in organisms:
+        coordinates.append(
+            (organism.birth_location_longitude,
+             organism.birth_location_latitude)
+        )
+
+    return Response({
+        'species': species_count,
+        'breeds': breeds_count,
+        'countries': country_count,
+        'coordinates': coordinates
+    })
 
 
 def convert_to_radians(degrees):
     return float(degrees) * 3.14 / 180
 
 
-def organisms_gis_search(request):
+@api_view(['GET'])
+def organisms_gis_search(request, format=None):
     filter_results = dict()
     filter_results['results'] = list()
     latitude = convert_to_radians(request.GET.get('latitude', False))
@@ -167,7 +220,7 @@ def organisms_gis_search(request):
                 'sex': organism.sex
             }
             filter_results['results'].append(organism_results)
-    return JsonResponse(filter_results)
+    return Response(filter_results)
 
 
 def download_organism_data(request):
@@ -192,57 +245,88 @@ def download_organism_data(request):
     return response
 
 
-def get_specimens_summary(request):
-    species = dict()
-    organism_part = dict()
+@api_view(['GET'])
+def get_specimens_summary(request, format=None):
+    # get filters from get request
     species_filter = request.GET.get('species', False)
     organism_part_filter = request.GET.get('specimens__organism_part', False)
-    results = SampleInfo.objects.filter(specimens__isnull=False)
+
+    results = SampleInfo.objects.prefetch_related(
+        'specimens').filter(specimens__isnull=False)
+
+    # update queryset with filter submitted by GET
     if species_filter:
         results = results.filter(species=species_filter)
+
     if organism_part_filter:
         results = results.filter(specimens__organism_part=organism_part_filter)
-    species_names = results.order_by().values_list('species',
-                                                   flat=True).distinct()
-    organism_part_names = results.order_by().values_list(
-        'specimens__organism_part', flat=True).distinct()
-    for name in species_names:
-        species[name] = results.filter(species=name).count()
-    for name in organism_part_names:
-        organism_part[name] = results.filter(
-            specimens__organism_part=name).count()
-    return JsonResponse(
-        {
-            'species': species,
-            'organism_part': organism_part
-        }
-    )
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    species_count = count_items('species')
+    organism_count = count_items('specimens__organism_part')
+
+    return Response({
+        'species': species_count,
+        'organism_part': organism_count
+    })
 
 
-def get_specimens_graphical_summary(request):
+@api_view(['GET'])
+def get_specimens_graphical_summary(request, format=None):
+    """Return statistics for IMAGE-Portal summary page"""
+
+    # start queryset
+    results = SampleDataInfo.objects.select_related("sample")
+
+    def count_items(field, results=results):
+        qs = results.values(field).annotate(
+            total=Count(field)).order_by('total')
+
+        count = dict()
+
+        # update species result
+        for item in qs:
+            key = item[field]
+            total = item['total']
+            count[key] = total
+
+        return count
+
+    organism_count = count_items('organism_part')
+
     coordinates = list()
-    organism_part = dict()
-    results = SampleInfo.objects.filter(specimens__isnull=False)
-    organism_part_names = results.order_by().values_list(
-        'specimens__organism_part', flat=True).distinct()
-    specimens = results.exclude(specimens__collection_place_latitude='',
-                                specimens__collection_place_longitude='')
-    for name in organism_part_names:
-        organism_part[name] = results.filter(
-            specimens__organism_part=name).count()
-    for record in specimens:
-        specimen = record.specimens.get()
-        coordinates.append((specimen.collection_place_longitude,
-                            specimen.collection_place_latitude))
-    return JsonResponse(
-        {
-            'organism_part': organism_part,
-            'coordinates': coordinates
-        }
-    )
+
+    specimens = results.exclude(
+        collection_place_latitude='',
+        collection_place_longitude='')
+
+    for specimen in specimens:
+        coordinates.append(
+            (specimen.collection_place_longitude,
+             specimen.collection_place_latitude)
+        )
+
+    return Response({
+        'organism_part': organism_count,
+        'coordinates': coordinates
+    })
 
 
-def specimens_gis_search(request):
+@api_view(['GET'])
+def specimens_gis_search(request, format=None):
     filter_results = dict()
     filter_results['results'] = list()
     latitude = convert_to_radians(request.GET.get('latitude', False))
@@ -267,7 +351,7 @@ def specimens_gis_search(request):
                 'organism_part': specimen.organism_part
             }
             filter_results['results'].append(specimen_results)
-    return JsonResponse(filter_results)
+    return Response(filter_results)
 
 
 def download_specimen_data(request):
@@ -345,7 +429,8 @@ class ListSpecimensView(generics.ListCreateAPIView):
     ordering_fields = ['data_source_id']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(specimens__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'specimens').filter(specimens__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = SpecimensSerializer(
@@ -369,7 +454,8 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
                        'specimens__organism_part']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(specimens__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'specimens').filter(specimens__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = SpecimensSerializerShort(data=request.data)
@@ -380,52 +466,25 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class SpecimensDetailsView(generics.RetrieveDestroyAPIView):
-    queryset = SampleInfo.objects.all()
+class SpecimensDetailsView(generics.RetrieveUpdateDestroyAPIView):
+    # since we are searching with sampleinfo, I need to return only entries
+    # with a relationship with SampleDataInfo (specimens)
+    queryset = SampleInfo.objects.prefetch_related(
+        'specimens').filter(specimens__isnull=False)
+    lookup_field = "data_source_id"
     serializer_class = SpecimensSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    def get(self, request, *a, **kw):
-        try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            return Response(SpecimensSerializer(
-                organism, context={'request': request}).data)
-
-        except SampleInfo.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Organism with id: {} does not exist".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-    def delete(self, request, *a, **kw):
-        try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            organism.delete()
-            return Response(
-                data={
-                    "message": "Specimen with id: {} was deleted".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_202_ACCEPTED
-            )
-        except SampleInfo.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Specimen with id: {} does not exist".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
 
 
 class ListOrganismsView(generics.ListCreateAPIView):
     serializer_class = OrganismsSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [
+        DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = [
+        'species', 'organisms__supplied_breed',
+        'organisms__efabis_breed_country', 'organisms__sex']
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
@@ -455,7 +514,11 @@ class ListOrganismsView(generics.ListCreateAPIView):
     ordering_fields = ['data_source_id']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(organisms__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'organisms',
+            "organisms__dadis",
+            "organisms__dadis__species").filter(
+                organisms__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = OrganismsSerializer(
@@ -473,14 +536,16 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter,
                        filters.OrderingFilter]
-    filterset_fields = ['species', 'organisms__supplied_breed',
-                        'organisms__sex']
+    filterset_fields = [
+        'species', 'organisms__supplied_breed',
+        'organisms__efabis_breed_country', 'organisms__sex']
     search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
     ordering_fields = ['data_source_id', 'species',
                        'organisms__supplied_breed', 'organisms__sex']
 
     def get_queryset(self):
-        return SampleInfo.objects.filter(organisms__isnull=False)
+        return SampleInfo.objects.prefetch_related(
+            'organisms').filter(organisms__isnull=False)
 
     def post(self, request, *args, **kwargs):
         serializer = OrganismsSerializerShort(data=request.data)
@@ -491,45 +556,14 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
                         status=status.HTTP_400_BAD_REQUEST)
 
 
-class OrganismsDetailsView(generics.RetrieveDestroyAPIView):
-    queryset = SampleInfo.objects.all()
+class OrganismsDetailsView(generics.RetrieveUpdateDestroyAPIView):
+    # since we are searching with sampleinfo, I need to return only entries
+    # with a relationship with AnimalInfo (organisms)
+    queryset = SampleInfo.objects.prefetch_related(
+        'organisms').filter(organisms__isnull=False)
+    lookup_field = "data_source_id"
     serializer_class = OrganismsSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    def get(self, request, *a, **kw):
-        try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            return Response(OrganismsSerializer(
-                organism, context={'request': request}).data)
-
-        except SampleInfo.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Organism with id: {} does not exist".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-    def delete(self, request, *a, **kw):
-        try:
-            organism = self.queryset.get(data_source_id=kw['data_source_id'])
-            organism.delete()
-            return Response(
-                data={
-                    "message": "Organism with id: {} was deleted".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_202_ACCEPTED
-            )
-        except SampleInfo.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Organism with id: {} does not exist".format(
-                        kw['data_source_id'])
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
 
 
 class ListCreateFilesView(generics.ListCreateAPIView):
@@ -615,7 +649,7 @@ class DADISLinkViewSet(viewsets.ModelViewSet):
     Update DADIS table
     """
 
-    queryset = DADISLink.objects.all()
+    queryset = DADISLink.objects.select_related('species').all()
     serializer_class = DADISLinkSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = LargeResultsSetPagination
