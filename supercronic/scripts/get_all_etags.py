@@ -1,6 +1,9 @@
+
+import sys
 import aiohttp
 import asyncio
 import requests
+import logging
 
 from common import rotate_file, ETAG_FILE, PAGE_SIZE
 
@@ -8,13 +11,24 @@ from common import rotate_file, ETAG_FILE, PAGE_SIZE
 ETAG = []
 ETAG_IDS = []
 
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 def main():
+    logger.info("get all accession from BioSamples")
     biosample_ids = fetch_biosample_ids()
+
+    logger.info("get all etags from BioSamples")
     asyncio.get_event_loop().run_until_complete(fetch_all_etags(biosample_ids))
+
     if len(biosample_ids) != len(ETAG_IDS):
+        logger.info("Searching for missing IDS")
         for my_id in biosample_ids:
             if my_id not in ETAG_IDS:
+                logger.debug(f"Get missing {my_id}")
                 resp = requests.get(
                     f"http://www.ebi.ac.uk/biosamples/samples/{my_id}").headers
                 if 'ETag' in resp and resp['ETag']:
@@ -57,6 +71,8 @@ def fetch_biosample_ids():
 
 
 if __name__ == "__main__":
+    logger.info("%s started!" % (sys.argv[0]))
+
     # rotating files
     rotate_file(ETAG_FILE)
 
@@ -67,3 +83,5 @@ if __name__ == "__main__":
     with open(ETAG_FILE, 'w') as w:
         for item in sorted(ETAG):
             w.write(item + "\n")
+
+    logger.info("%s completed!" % (sys.argv[0]))
