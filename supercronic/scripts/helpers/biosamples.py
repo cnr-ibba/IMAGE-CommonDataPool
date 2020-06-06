@@ -47,7 +47,7 @@ async def parse_json(response, url):
         return {}
 
 
-async def fetch_url(session, url, params=PARAMS):
+async def fetch_page(session, url, params=PARAMS):
     """
     Fetch a generic url, read data as json and return a promise
 
@@ -86,16 +86,16 @@ async def fetch_url(session, url, params=PARAMS):
         return {}
 
 
-async def get_biosamples_ids(params=PARAMS, connector=CONNECTOR):
+async def get_biosamples_ids(session, params=PARAMS):
     """
 
 
     Parameters
     ----------
+    session : aiohttp.ClientSession
+        an async session object.
     params : MultiDict, optional
         Specify query parameters. The default is PARAMS.
-    connector : aiohttp.TCPConnector, optional
-        Tune the connection pool for aiohttp. The default is CONNECTOR.
 
     Raises
     ------
@@ -111,46 +111,74 @@ async def get_biosamples_ids(params=PARAMS, connector=CONNECTOR):
 
     url = "https://www.ebi.ac.uk/biosamples/accessions"
 
-    # https://stackoverflow.com/a/43857526
-    async with aiohttp.ClientSession(connector=connector) as session:
-        # get data for the first time to determine how many pages I have
-        # to requests
-        data = await fetch_url(session, url, params)
+    # get data for the first time to determine how many pages I have
+    # to request
+    data = await fetch_page(session, url, params)
+
+    # maybe the request had issues
+    if data == {}:
+        logger.debug("Got a result with no data")
+        raise ConnectionError("Can't fetch biosamples for accession")
+
+    for accession in data['_embedded']['accessions']:
+        yield accession
+
+    tasks = []
+
+    # get pages # debug
+    totalPages = 2  # data['page']['totalPages']
+
+    # generate new awaitable objects
+    for page in range(1, totalPages):
+        # get a new param object to edit
+        my_params = params.copy()
+
+        # edit a multidict object
+        my_params.update(page=page)
+
+        # track the new awaitable object
+        tasks.append(fetch_page(session, url, my_params))
+
+    # Run awaitable objects in the aws set concurrently.
+    # Return an iterator of Future objects.
+    for task in asyncio.as_completed(tasks):
+        # read data
+        data = await task
 
         # maybe the request had issues
         if data == {}:
-            logger.debug("Got a result with no data")
-            raise ConnectionError("Can't fetch biosamples for accession")
+            logger.debug("Got a result with no data for accession")
+            continue
 
         for accession in data['_embedded']['accessions']:
             yield accession
 
-        tasks = []
 
-        # get pages # debug
-        totalPages = 2  # data['page']['totalPages']
+async def get_biosample_record(accession, session):
+    """
+    Get a biosample record from a BioSample id
 
-        # generate new awaitable objects
-        for page in range(1, totalPages):
-            # get a new param object to edit
-            my_params = params.copy()
+    Parameters
+    ----------
+    accession : str
+        The biosample accession id.
+    session : aiohttp.ClientSession, optional
+        a client session object. The default is SESSION.
 
-            # edit a multidict object
-            my_params.update(page=page)
+    Returns
+    -------
+    record : dict
+        the BioSample record
+    etag : str
+        The etag value read from response header.
 
-            # track the new awaitable object
-            tasks.append(fetch_url(session, url, my_params))
+    """
 
-        # Run awaitable objects in the aws set concurrently.
-        # Return an iterator of Future objects.
-        for task in asyncio.as_completed(tasks):
-            # read data
-            data = await task
+    url = "https://www.ebi.ac.uk/biosamples/samples/{}".format(accession)
+    logger.debug(url)
 
-            # maybe the request had issues
-            if data == {}:
-                logger.debug("Got a result with no data for accession")
-                continue
+    resp = await session.get(url, headers=HEADERS)
+    record = await parse_json(resp, url)
 
-            for accession in data['_embedded']['accessions']:
-                yield accession
+    etag = resp.headers.get('ETag')
+    return record, etag
