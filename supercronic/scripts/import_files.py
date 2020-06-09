@@ -1,7 +1,7 @@
 import click
 import requests
 
-from .helpers.backend import BACKEND_URL, IMPORT_PASSWORD
+from helpers.backend import BACKEND_URL, IMPORT_PASSWORD
 
 # the pattern used in the Project Title in EVA submission to identify IMAGE
 # related genotype data

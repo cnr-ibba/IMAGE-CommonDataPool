@@ -15,7 +15,7 @@ import logging
 import requests
 import collections
 
-from .helpers.backend import BACKEND_URL, IMPORT_PASSWORD
+from helpers.backend import BACKEND_URL, IMPORT_PASSWORD
 
 
 logging.basicConfig(
