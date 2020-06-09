@@ -15,7 +15,7 @@ from fetch_biosamples import get_ruleset, parse_biosample
 
 from helpers.biosamples import (
     get_biosamples_ids, CONNECTOR as EBI_CONNECTOR, get_biosample_record)
-from helpers.backend import get_cdp_etag, post_organism
+from helpers.backend import get_cdp_etag, post_record, put_record
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -107,30 +107,46 @@ async def process_record(accession, ebi_session, cdp_session):
         logger.error(str(record))
         raise exc
 
-    logger.debug(
-        f'Search for {accession}:{material} in CDP')
-
-    # TODO: check CDP record
+    # check CDP record
     if material == 'organism':
-        cdp_etag = await get_cdp_etag(cdp_session, accession, "organism")
-
-        logger.debug("Biosample etag %s, CDP etag %s" % (ebi_etag, cdp_etag))
-
-        if not cdp_etag:
-            # new insert
-            await post_organism(cdp_session, convert_record(record, ebi_etag))
-
-        elif cdp_etag != ebi_etag:
-            # TODO: make update to CDP
-            raise NotImplementedError("Update the CDP")
-
-        else:
-            logger.debug(f"Etags are equal. Ignoring {accession}")
+        record_type = "organism"
 
     elif material == 'specimen from organism':
-        cdp_etag = await get_cdp_etag(cdp_session, accession, "specimen")
+        record_type = "specimen"
 
-        raise NotImplementedError("Implement the specimen case")
+    else:
+        raise NotImplementedError(f"Material '{material}' not implemented")
+
+    logger.debug(
+        f'Search for {accession} ({record_type}) in CDP')
+
+    # get info from CDP
+    cdp_etag = await get_cdp_etag(cdp_session, accession, record_type)
+
+    logger.debug(
+        f"Check etags for {accession}: Biosample {ebi_etag}, CDP {cdp_etag}")
+
+    if cdp_etag is None:
+        # new insert
+        logger.debug(f"Creating {accession}")
+
+        await post_record(
+            cdp_session,
+            convert_record(record, ebi_etag),
+            record_type)
+
+    elif cdp_etag != ebi_etag:
+        # make update to CDP
+        logger.debug(f"Tags differ: Update {accession}")
+
+        await put_record(
+            cdp_session,
+            accession,
+            convert_record(record, ebi_etag),
+            record_type)
+
+    else:
+        logger.debug(f"Etags are equal. Ignoring {accession}")
 
     return accession, ebi_etag
 
@@ -152,7 +168,7 @@ async def main():
             # await for tasks completion
             for task in asyncio.as_completed(tasks):
                 accession, etag = await task
-                logger.info(f"{accession},{etag} completed!")
+                logger.debug(f"{accession} ({etag}) completed!")
 
 
 if __name__ == "__main__":
