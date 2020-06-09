@@ -13,8 +13,10 @@ import logging
 from yarl import URL
 from multidict import MultiDict
 
+from .common import parse_json, HEADERS
+
 # Setting page size for biosample requests
-PAGE_SIZE = 20
+PAGE_SIZE = 500
 
 # define custom parameters
 PARAMS = MultiDict([
@@ -22,29 +24,12 @@ PARAMS = MultiDict([
     ('filter', 'attr:project:IMAGE'),
 ])
 
-HEADERS = {
-    'Accept': 'application/json',
-}
-
 # limiting the number of connections
 # https://docs.aiohttp.org/en/stable/client_advanced.html
 CONNECTOR = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
-
-
-async def parse_json(response, url):
-    """Helper function to parse json data"""
-
-    try:
-        return await response.json()
-
-    except aiohttp.client_exceptions.ContentTypeError as exc:
-        logger.error(repr(exc))
-        logger.warning(
-            "error while getting data from %s" % url)
-        return {}
 
 
 async def fetch_page(session, url, params=PARAMS):
@@ -72,7 +57,7 @@ async def fetch_page(session, url, params=PARAMS):
     url = URL(url)
     url = url.update_query(params)
 
-    logger.debug(url)
+    logger.debug(f"GET {url}")
 
     try:
         async with session.get(url, headers=HEADERS) as response:
@@ -175,7 +160,7 @@ async def get_biosample_record(accession, session):
     """
 
     url = "https://www.ebi.ac.uk/biosamples/samples/{}".format(accession)
-    logger.debug(url)
+    logger.debug(f"GET {url}")
 
     resp = await session.get(url, headers=HEADERS)
     record = await parse_json(resp, url)
