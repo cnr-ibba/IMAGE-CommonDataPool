@@ -20,6 +20,7 @@ SAMPLE_RULESET_URL = (
     'https://raw.githubusercontent.com/cnr-ibba/'
     'IMAGE-metadata/master/rulesets/sample_ruleset.json')
 
+# This is required for authenticating with aiohttp
 AUTH = aiohttp.BasicAuth('admin', IMPORT_PASSWORD)
 
 # Get an instance of a logger
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 async def get_cdp_etag(session, accession, record_type):
     """
-    Get etag from CDP using biosample id and material type
+    Get etag from CDP using BioSamples ID and material type
 
     Parameters
     ----------
@@ -38,6 +39,11 @@ async def get_cdp_etag(session, accession, record_type):
         The biosample accession id.
     record_type : str
         Could be 'organism' or 'specimen'.
+
+    Raises
+    ------
+    NotImplementedError
+        A status code different from 200 and 404.
 
     Returns
     -------
@@ -81,7 +87,6 @@ async def post_record(session, record, record_type):
     Returns
     -------
     None.
-
     """
 
     global AUTH
@@ -118,7 +123,6 @@ async def put_record(session, biosample_id, record, record_type):
     Returns
     -------
     None.
-
     """
 
     global AUTH
@@ -338,7 +342,6 @@ class CDPConverter():
         -------
         record : dict
             a CDP record.
-
         """
 
         # covert agains standard rules

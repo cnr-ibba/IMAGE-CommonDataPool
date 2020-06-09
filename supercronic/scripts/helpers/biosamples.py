@@ -41,17 +41,17 @@ async def fetch_page(session, url, params=PARAMS):
     session : aiohttp.ClientSession
         an async session object.
     url : str
-        the desidered url. The default is BIOSAMPLE_URL.
+        the desidered url.
     params : MultiDict, optional
-        Additional params for request. The default is BIOSAMPLE_PARAMS.
+        Additional params for request. The default is PARAMS.
 
     Returns
     -------
-    dict
-        json content of the page
-
+    data : dict
+        Json content of the page
+    url : str
+        The requested URL (for debugging purposes)
     """
-    """"""
 
     # define a URL with yarl
     url = URL(url)
@@ -74,7 +74,7 @@ async def fetch_page(session, url, params=PARAMS):
 
 async def get_biosamples_ids(session, params=PARAMS):
     """
-
+    Fetch accessions (BioSamples IDs) from BioSamples
 
     Parameters
     ----------
@@ -92,7 +92,6 @@ async def get_biosamples_ids(session, params=PARAMS):
     ------
     accession : str
         a BioSample ID.
-
     """
 
     url = "https://www.ebi.ac.uk/biosamples/accessions"
@@ -166,7 +165,6 @@ async def get_biosample_record(accession, session):
         the BioSample record
     etag : str
         The etag value read from response header.
-
     """
 
     url = "https://www.ebi.ac.uk/biosamples/samples/{}".format(accession)

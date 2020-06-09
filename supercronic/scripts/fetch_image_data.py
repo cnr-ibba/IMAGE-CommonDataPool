@@ -23,8 +23,6 @@ logging.basicConfig(
     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-standard_rules, organism_rules, specimen_rules = None, None, None
-
 
 class Operation(Enum):
     ignored = 'ignored'
@@ -49,18 +47,13 @@ async def process_record(accession, ebi_session, cdp_session, converter):
     converter : CDPConverter
         a CDPConverter instance for data conversion.
 
-    Raises
-    ------
-    KeyError
-        A BioSample Object without a material attribute.
-
     Returns
     -------
     operation : Operation
         created or updated if creating or updating an object. Ignored when
         there's nothing to do.
     accession : str
-        The processed The BioSamples ID (needed when collection tasks).
+        The processed The BioSamples ID (needed when collecting tasks).
     ebi_etag : str
         the BioSamples etag header attribute.
     """
@@ -96,6 +89,7 @@ async def process_record(accession, ebi_session, cdp_session, converter):
 
         await post_record(
             cdp_session,
+            # convert BioSamples data into CDP format
             converter.convert_record(record, ebi_etag),
             material.name)
 
@@ -107,6 +101,7 @@ async def process_record(accession, ebi_session, cdp_session, converter):
         await put_record(
             cdp_session,
             accession,
+            # convert BioSamples data into CDP format
             converter.convert_record(record, ebi_etag),
             material.name)
 
@@ -117,18 +112,27 @@ async def process_record(accession, ebi_session, cdp_session, converter):
 
 
 async def main():
+    """
+    Main function for asyncio loop
+
+    Returns
+    -------
+    None.
+    """
+
     async with aiohttp.ClientSession() as cdp_session:
-        # Get rules
+        # Get rules from github
         logger.info("Getting ruleset")
         ruleset_task = asyncio.create_task(get_ruleset(cdp_session))
 
         async with aiohttp.ClientSession(
                 connector=EBI_CONNECTOR) as ebi_session:
 
-            # get results from ruleset
+            # get results from github
+            # HINT: could this be synchronous?
             standard_rules, organism_rules, specimen_rules = await ruleset_task
 
-            # create a new CDPConverter instance for record conversion
+            # create a new CDPConverter instance for using IMAGE ruleset
             converter = CDPConverter(
                 standard_rules,
                 organism_rules,
