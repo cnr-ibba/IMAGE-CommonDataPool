@@ -108,13 +108,13 @@ async def process_record(accession, ebi_session, cdp_session):
         raise exc
 
     logger.debug(
-        f'{accession}:{material}')
+        f'Search for {accession}:{material} in CDP')
 
     # TODO: check CDP record
     if material == 'organism':
         cdp_etag = await get_cdp_etag(cdp_session, accession, "organism")
 
-        logger.debug("Biosample %s, CDP %s" % (ebi_etag, cdp_etag))
+        logger.debug("Biosample etag %s, CDP etag %s" % (ebi_etag, cdp_etag))
 
         if not cdp_etag:
             # new insert
@@ -122,13 +122,15 @@ async def process_record(accession, ebi_session, cdp_session):
 
         elif cdp_etag != ebi_etag:
             # TODO: make update to CDP
-            pass
+            raise NotImplementedError("Update the CDP")
 
         else:
-            logger.debug(f"Ignoring {accession}")
+            logger.debug(f"Etags are equal. Ignoring {accession}")
 
     elif material == 'specimen from organism':
         cdp_etag = await get_cdp_etag(cdp_session, accession, "specimen")
+
+        raise NotImplementedError("Implement the specimen case")
 
     return accession, ebi_etag
 

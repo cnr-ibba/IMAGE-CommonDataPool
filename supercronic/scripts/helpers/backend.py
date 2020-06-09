@@ -22,7 +22,7 @@ AUTH = aiohttp.BasicAuth('admin', IMPORT_PASSWORD)
 logger = logging.getLogger(__name__)
 
 
-async def get_cdp_etag(session, accession, records_type):
+async def get_cdp_etag(session, accession, record_type):
     """
     Get etag from CDP using biosample id and material type
 
@@ -32,7 +32,7 @@ async def get_cdp_etag(session, accession, records_type):
         a client session object.
     accession : str
         The biosample accession id.
-    records_type : str
+    record_type : str
         Could be 'organism' or 'specimen'
 
     Returns
@@ -41,13 +41,13 @@ async def get_cdp_etag(session, accession, records_type):
         the CDP Etag or None (if not found)
     """
 
-    url = f"{BACKEND_URL}/{records_type}/{accession}/"
-    logger.debug(url)
+    url = f"{BACKEND_URL}/{record_type}/{accession}/"
+    logger.debug(f"GET {url}")
 
     resp = await session.get(url, headers=HEADERS)
 
     if resp.status == 404:
-        logger.debug(f"{accession} not found")
+        logger.debug(f"{accession} not in CDP")
         return None
 
     record = await parse_json(resp, url)
@@ -60,10 +60,11 @@ async def post_organism(session, record):
 
     global AUTH
 
-    logger.debug(record)
+    url = f'{BACKEND_URL}/organism/'
+    logger.debug("POST {accession} {url}".format(record["accession"], url))
 
     response = await session.post(
-        f'{BACKEND_URL}/organism/',
+        url,
         json=record,
         auth=AUTH)
 
@@ -74,11 +75,15 @@ async def post_organism(session, record):
 async def put_organism(session, biosample_id, record):
     """Put a single organism"""
 
-    logger.debug(record)
+    global AUTH
 
     url = f"{BACKEND_URL}/organism/{biosample_id}/"
+    logger.debug("PUT {accession} {url}".format(record["accession"], url))
 
-    response = await session.put(url, json=record)
+    response = await session.put(
+        url,
+        json=record,
+        auth=AUTH)
 
     if response.status != 200:
         logger.error(response.text[-200:])
@@ -87,9 +92,15 @@ async def put_organism(session, biosample_id, record):
 async def post_specimen(session, record):
     """post a single specimen"""
 
-    logger.debug(record)
+    global AUTH
 
-    response = await session.post(f'{BACKEND_URL}/specimen/', json=record)
+    url = f'{BACKEND_URL}/specimen/'
+    logger.debug("POST {accession} {url}".format(record["accession"], url))
+
+    response = await session.post(
+        url,
+        json=record,
+        auth=AUTH)
 
     if response.status != 201:
         logger.error(response.text[-200:])
@@ -98,11 +109,15 @@ async def post_specimen(session, record):
 async def put_specimen(session, biosample_id, record):
     """Put a single specimen"""
 
-    logger.debug(record)
+    global AUTH
 
     url = f"{BACKEND_URL}/specimen/{biosample_id}/"
+    logger.debug("PUT {accession} {url}".format(record["accession"], url))
 
-    response = await session.put(url, json=record)
+    response = await session.put(
+        url,
+        json=record,
+        auth=AUTH)
 
     if response.status_code != 200:
         logger.error(response.text[-200:])
