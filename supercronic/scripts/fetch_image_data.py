@@ -20,16 +20,17 @@ from helpers.backend import (
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG)
+    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 standard_rules, organism_rules, specimen_rules = None, None, None
 
 
 class Operation(Enum):
-    ignored = 'ignore'
-    created = 'create'
-    updated = 'update'
+    ignored = 'ignored'
+    created = 'created'
+    updated = 'updated'
+    error = 'error'
 
 
 async def process_record(accession, ebi_session, cdp_session, converter):
@@ -58,6 +59,8 @@ async def process_record(accession, ebi_session, cdp_session, converter):
     operation : Operation
         created or updated if creating or updating an object. Ignored when
         there's nothing to do.
+    accession : str
+        The processed The BioSamples ID (needed when collection tasks).
     ebi_etag : str
         the BioSamples etag header attribute.
     """
@@ -69,9 +72,10 @@ async def process_record(accession, ebi_session, cdp_session, converter):
         material = Material(record["characteristics"]["material"][0]["text"])
 
     except KeyError as exc:
-        logger.error("Cannot find material")
-        logger.error(str(record))
-        raise exc
+        logger.error(
+            f"Cannot find material for {accession}: {record['message']}")
+        logger.debug("Missing key %s" % str(exc))
+        return Operation.error, accession, record
 
     logger.debug(
         f'Search for {accession} ({material.name}) in CDP')
@@ -109,7 +113,7 @@ async def process_record(accession, ebi_session, cdp_session, converter):
     else:
         logger.debug(f"Etags are equal. Ignoring {accession}")
 
-    return operation, ebi_etag
+    return operation, accession, ebi_etag
 
 
 async def main():
@@ -135,8 +139,6 @@ async def main():
 
             # go through biosample ids
             async for accession in get_biosamples_ids(ebi_session):
-                # get ruleset
-
                 # process a BioSamples record
                 task = asyncio.create_task(
                     process_record(
@@ -151,9 +153,23 @@ async def main():
 
             # await for tasks completion
             for task in asyncio.as_completed(tasks):
-                operation, etag = await task
-                logger.debug(
-                    f"{operation.value} {accession} ({etag}) completed!")
+                operation, accession, etag = await task
+
+                if operation == Operation.ignored:
+                    logger.debug(
+                        f"Sample {accession} ({etag}) {operation.value}!"
+                    )
+
+                elif operation in (Operation.created, Operation.updated):
+                    logger.info(
+                        f"Sample {accession} ({etag}) {operation.value}!"
+                    )
+
+                else:
+                    logger.error(
+                        f"{operation.value} for {accession} ({etag['error']}): "
+                        "is this a private sample?"
+                    )
 
 
 if __name__ == "__main__":

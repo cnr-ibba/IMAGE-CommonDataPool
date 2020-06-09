@@ -62,13 +62,14 @@ async def fetch_page(session, url, params=PARAMS):
     try:
         async with session.get(url, headers=HEADERS) as response:
             # try to read json data
-            return await parse_json(response, url)
+            data = await parse_json(response, url)
+            return data, url
 
     except aiohttp.client_exceptions.ServerDisconnectedError as exc:
         logger.error(repr(exc))
         logger.warning(
             "server disconnected during %s" % url)
-        return {}
+        return {}, url
 
 
 async def get_biosamples_ids(session, params=PARAMS):
@@ -96,14 +97,21 @@ async def get_biosamples_ids(session, params=PARAMS):
 
     url = "https://www.ebi.ac.uk/biosamples/accessions"
 
+    logger.info("Searching for BioSamples accessions")
+
     # get data for the first time to determine how many pages I have
     # to request
-    data = await fetch_page(session, url, params)
+    data, url = await fetch_page(session, url, params)
+
+    logger.debug(f"Got data from {url}")
 
     # maybe the request had issues
     if data == {}:
         logger.debug("Got a result with no data")
         raise ConnectionError("Can't fetch biosamples for accession")
+
+    logger.info("Got %s samples from BioSamples" % (
+        data['page']['totalElements']))
 
     for accession in data['_embedded']['accessions']:
         yield accession
@@ -111,7 +119,7 @@ async def get_biosamples_ids(session, params=PARAMS):
     tasks = []
 
     # get pages # debug
-    totalPages = 2  # data['page']['totalPages']
+    totalPages = data['page']['totalPages']
 
     # generate new awaitable objects
     for page in range(1, totalPages):
@@ -128,7 +136,9 @@ async def get_biosamples_ids(session, params=PARAMS):
     # Return an iterator of Future objects.
     for task in asyncio.as_completed(tasks):
         # read data
-        data = await task
+        data, url = await task
+
+        logger.debug(f"Got data from {url}")
 
         # maybe the request had issues
         if data == {}:

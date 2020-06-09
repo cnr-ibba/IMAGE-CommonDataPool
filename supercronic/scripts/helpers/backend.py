@@ -54,11 +54,15 @@ async def get_cdp_etag(session, accession, record_type):
         logger.debug(f"{accession} not in CDP")
         return None
 
-    record = await parse_json(response, url)
+    if response.status == 200:
+        record = await parse_json(response, url)
+        logger.debug(f"Got data for {accession}")
+        return record['etag']
 
-    logger.debug(f"Got data for {accession}")
-
-    return record['etag']
+    else:
+        logger.error(response.status)
+        logger.error(response.text)
+        raise NotImplementedError("Status code not managed")
 
 
 async def post_record(session, record, record_type):
