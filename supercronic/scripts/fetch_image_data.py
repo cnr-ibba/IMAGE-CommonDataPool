@@ -16,7 +16,8 @@ from enum import Enum
 from helpers.biosamples import (
     get_biosamples_ids, CONNECTOR as EBI_CONNECTOR, get_biosample_record)
 from helpers.backend import (
-    get_cdp_etag, post_record, put_record, CDPConverter, get_ruleset, Material)
+    get_cdp_etag, post_record, put_record, CDPConverter, get_ruleset, Material,
+    CONNECTOR as CDP_CONNECTOR)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -120,11 +121,15 @@ async def main():
     None.
     """
 
-    async with aiohttp.ClientSession() as cdp_session:
+    # limiting the number of request sent to backend
+    async with aiohttp.ClientSession(
+            connector=CDP_CONNECTOR) as cdp_session:
+
         # Get rules from github
         logger.info("Getting ruleset")
         ruleset_task = asyncio.create_task(get_ruleset(cdp_session))
 
+        # limiting the number of request sent to EBI
         async with aiohttp.ClientSession(
                 connector=EBI_CONNECTOR) as ebi_session:
 

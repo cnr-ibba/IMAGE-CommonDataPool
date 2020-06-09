@@ -14,6 +14,10 @@ from decouple import config
 
 from .common import parse_json, HEADERS
 
+# limiting the number of connections
+# https://docs.aiohttp.org/en/stable/client_advanced.html
+CONNECTOR = aiohttp.TCPConnector(limit=20, ttl_dns_cache=300)
+
 BACKEND_URL = 'http://nginx/data_portal/backend'
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 SAMPLE_RULESET_URL = (
