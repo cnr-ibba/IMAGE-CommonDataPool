@@ -112,6 +112,39 @@ async def process_record(accession, ebi_session, cdp_session, converter):
     return operation, accession, ebi_etag
 
 
+async def check_task_complete(task):
+    """
+    Await for task completion and print messages to console
+
+    Parameters
+    ----------
+    task : asyncio.Task
+        A task create with process_record function
+
+    Returns
+    -------
+    None.
+
+    """
+    operation, accession, etag = await task
+
+    if operation == Operation.ignored:
+        logger.debug(
+            f"Sample {accession} ({etag}) {operation.value}!"
+        )
+
+    elif operation in (Operation.created, Operation.updated):
+        logger.info(
+            f"Sample {accession} ({etag}) {operation.value}!"
+        )
+
+    else:
+        logger.error(
+            f"{operation.value} for {accession} "
+            f"({etag['error']}): is this a private sample?"
+        )
+
+
 async def main():
     """
     Main function for asyncio loop
@@ -145,8 +178,9 @@ async def main():
 
             # collect annotation task
             tasks = []
+            counter = 0
 
-            # go through biosample ids
+            # go through biosample ids. async generator is not an iterable!
             async for accession in get_biosamples_ids(ebi_session):
                 # process a BioSamples record
                 task = asyncio.create_task(
@@ -159,26 +193,29 @@ async def main():
 
                 # append task
                 tasks.append(task)
+                counter += 1
 
-            # await for tasks completion
-            for task in asyncio.as_completed(tasks):
-                operation, accession, etag = await task
-
-                if operation == Operation.ignored:
+                # There is no benefit to launching a million requests at once.
+                # limit and wait for those before continuing the loop.
+                # https://stackoverflow.com/a/54620443
+                if (counter) % 100 == 0:
                     logger.debug(
-                        f"Sample {accession} ({etag}) {operation.value}!"
+                        "Completing a batch of tasks starting from %s" % (
+                            counter-100)
                     )
 
-                elif operation in (Operation.created, Operation.updated):
-                    logger.info(
-                        f"Sample {accession} ({etag}) {operation.value}!"
-                    )
+                    for task in asyncio.as_completed(tasks):
+                        await check_task_complete(task)
 
-                else:
-                    logger.error(
-                        f"{operation.value} for {accession} "
-                        "({etag['error']}): is this a private sample?"
-                    )
+                    # reset task list
+                    tasks = []
+
+            # await for tasks completion (for remaining task)
+            if len(tasks) > 0:
+                logger.debug("Completing the remaining tasks")
+
+                for task in asyncio.as_completed(tasks):
+                    await check_task_complete(task)
 
 
 if __name__ == "__main__":

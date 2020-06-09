@@ -131,6 +131,12 @@ async def get_biosamples_ids(session, params=PARAMS):
         # track the new awaitable object
         tasks.append(fetch_page(session, url, my_params))
 
+        # There is no benefit to launching a million requests at once.
+        # limit and wait for those before continuing the loop.
+        # https://stackoverflow.com/a/54620443
+        # TODO: process a batch of tasks (however biosample request are
+        # fewer than CDP, I could increase page size as a workaround)
+
     # Run awaitable objects in the aws set concurrently.
     # Return an iterator of Future objects.
     for task in asyncio.as_completed(tasks):
