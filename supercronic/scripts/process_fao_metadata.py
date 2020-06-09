@@ -15,7 +15,7 @@ import logging
 import requests
 import collections
 
-from decouple import config
+from .helpers.backend import BACKEND_URL, IMPORT_PASSWORD
 
 
 logging.basicConfig(
@@ -26,9 +26,6 @@ logger = logging.getLogger(__name__)
 # global variables
 SPECIES2COMMON, COMMON2SPECIES = dict(), dict()
 SESSION = None
-
-BACKEND_URL = 'http://nginx/data_portal/backend'
-IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 
 
 # a function to get the list of common species from data_portal

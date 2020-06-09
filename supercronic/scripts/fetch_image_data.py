@@ -167,8 +167,8 @@ async def main():
 
                 else:
                     logger.error(
-                        f"{operation.value} for {accession} ({etag['error']}): "
-                        "is this a private sample?"
+                        f"{operation.value} for {accession} "
+                        "({etag['error']}): is this a private sample?"
                     )
 
 
