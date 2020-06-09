@@ -48,7 +48,10 @@ $ docker-compose exec supercronic /bin/bash
 Then, inside the container execute:
 
 ```
-$ python /code/scripts/get_all_etags.py && python /code/scripts/fetch_biosamples.py && python /code/scripts/import_data.py
+$ python /code/scripts/get_all_etags.py && \
+  python /code/scripts/fetch_biosamples.py && \
+  python /code/scripts/import_data.py && \
+  python /code/scripts/process_fao_metadata.py
 
 $ python /code/scripts/import_files.py
 ```

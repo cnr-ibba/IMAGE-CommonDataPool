@@ -19,10 +19,15 @@ def fetch_biosamples():
     """
 
     # Get rules
+    logger.info("Getting ruleset")
     standard_rules, organism_rules, specimen_rules = get_ruleset()
+
+    logger.info("Reading etags")
     etags = read_etags()
     samples = list()
 
+    # OPTIMIZE: get data in async way. Don't store all stuff in memory
+    logger.info("Getting all data from BioSamples")
     results = requests.get(
         f'https://www.ebi.ac.uk/biosamples/samples'
         f'?size={PAGE_SIZE}&filter=attr:project:IMAGE').json()
@@ -30,6 +35,8 @@ def fetch_biosamples():
     while 'next' in results['_links']:
         samples.extend(results['_embedded']['samples'])
         results = requests.get(results['_links']['next']['href']).json()
+
+    logger.info("Processing samples")
 
     # extend last time
     samples.extend(results['_embedded']['samples'])
@@ -42,7 +49,16 @@ def fetch_biosamples():
         tmp = tmp_results.copy()
 
         tmp['data_source_id'] = sample['accession']
-        tmp['etag'] = etags[sample['accession']]
+
+        # after removing items from BioSample, I could have a record without
+        # ETAG entry
+        try:
+            tmp['etag'] = etags[sample['accession']]
+
+        except KeyError:
+            logger.warning(
+                "Couldn't find %s in etag list" % (sample['accession']))
+            continue
 
         if tmp['material'] == 'organism':
             tmp_results = parse_biosample(sample, organism_rules)
