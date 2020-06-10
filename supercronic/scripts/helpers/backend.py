@@ -8,11 +8,21 @@ Created on Sat Jun  6 16:41:54 2020
 
 import logging
 import aiohttp
+import asyncio
 
+from multidict import MultiDict
 from enum import Enum
 from decouple import config
 
-from .common import parse_json, HEADERS
+from .common import parse_json, HEADERS, fetch_page
+
+# Setting page size for CDP requests
+PAGE_SIZE = 500
+
+# define custom parameters
+PARAMS = MultiDict([
+    ('page_size', PAGE_SIZE),
+])
 
 # limiting the number of connections
 # https://docs.aiohttp.org/en/stable/client_advanced.html
@@ -68,9 +78,74 @@ async def get_cdp_etag(session, accession):
         return record['etag']
 
     else:
+        message = await response.text()
         logger.error(response.status)
-        logger.error(response.text)
+        logger.error(message)
         raise NotImplementedError("Status code not managed")
+
+
+async def get_all_cdp_etags(session, params=PARAMS):
+    url = f"{BACKEND_URL}/etag/"
+    logger.debug(f"GET {url}")
+
+    # get data for the first time to determine how many pages I have
+    # to request
+    data, url = await fetch_page(session, url, params)
+
+    logger.debug(f"Got data from {url}")
+
+    # maybe the request had issues
+    if data == {}:
+        logger.warning("Got a result with no data")
+        raise ConnectionError("Can't fetch biosamples for accession")
+
+    logger.info("Got %s etags from CDP" % (data['count']))
+
+    # define the results array
+    results = dict()
+
+    # ok collect the next tasks
+    tasks = []
+
+    # get total page
+    totalPages = data['total_pages']
+
+    # generate new awaitable objects. The last page is COMPRISED
+    # page 1 is the same of not saying pages in query params.
+    for page in range(1, totalPages+1):
+        # get a new param object to edit
+        my_params = params.copy()
+
+        # edit a multidict object
+        my_params.update(page=page)
+
+        # track the new awaitable object
+        tasks.append(fetch_page(session, url, my_params))
+
+        # There is no benefit to launching a million requests at once.
+        # limit and wait for those before continuing the loop.
+        # https://stackoverflow.com/a/54620443
+        # TODO: process a batch of tasks (however biosample request are
+        # fewer than CDP, I could increase page size as a workaround)
+
+    # Run awaitable objects in the aws set concurrently.
+    # Return an iterator of Future objects.
+    for task in asyncio.as_completed(tasks):
+        # read data
+        data, url = await task
+
+        logger.debug(f"Got data from {url}")
+
+        # maybe the request had issues
+        if data == {}:
+            logger.warning(f"Got a result with no data for {url}")
+            continue
+
+        # iterate over result once
+        for result in data['results']:
+            results[result["data_source_id"]] = result["etag"]
+
+    return results
 
 
 async def post_record(session, record, record_type):
@@ -104,7 +179,8 @@ async def post_record(session, record, record_type):
         auth=AUTH)
 
     if response.status != 201:
-        logger.error(response.text[-200:])
+        message = await response.text()
+        logger.error(message[-200:])
 
 
 async def put_record(session, biosample_id, record, record_type):
@@ -140,7 +216,8 @@ async def put_record(session, biosample_id, record, record_type):
         auth=AUTH)
 
     if response.status != 200:
-        logger.error(response.text[-200:])
+        message = await response.text()
+        logger.error(message[-200:])
 
 
 def get_text_unit_field(sample, biosample_name, field_to_fetch, is_list=False):

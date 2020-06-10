@@ -10,10 +10,9 @@ import aiohttp
 import asyncio
 import logging
 
-from yarl import URL
 from multidict import MultiDict
 
-from .common import parse_json, HEADERS
+from .common import parse_json, HEADERS, fetch_page
 
 # Setting page size for biosample requests
 PAGE_SIZE = 500
@@ -30,46 +29,6 @@ CONNECTOR = aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
-
-
-async def fetch_page(session, url, params=PARAMS):
-    """
-    Fetch a generic url, read data as json and return a promise
-
-    Parameters
-    ----------
-    session : aiohttp.ClientSession
-        an async session object.
-    url : str
-        the desidered url.
-    params : MultiDict, optional
-        Additional params for request. The default is PARAMS.
-
-    Returns
-    -------
-    data : dict
-        Json content of the page
-    url : str
-        The requested URL (for debugging purposes)
-    """
-
-    # define a URL with yarl
-    url = URL(url)
-    url = url.update_query(params)
-
-    logger.debug(f"GET {url}")
-
-    try:
-        async with session.get(url, headers=HEADERS) as response:
-            # try to read json data
-            data = await parse_json(response, url)
-            return data, url
-
-    except aiohttp.client_exceptions.ServerDisconnectedError as exc:
-        logger.error(repr(exc))
-        logger.warning(
-            "server disconnected during %s" % url)
-        return {}, url
 
 
 async def get_biosamples_ids(session, params=PARAMS):
@@ -106,7 +65,7 @@ async def get_biosamples_ids(session, params=PARAMS):
 
     # maybe the request had issues
     if data == {}:
-        logger.debug("Got a result with no data")
+        logger.warning(f"Got a result with no data for {url}")
         raise ConnectionError("Can't fetch biosamples for accession")
 
     logger.info("Got %s samples from BioSamples" % (
@@ -147,7 +106,7 @@ async def get_biosamples_ids(session, params=PARAMS):
 
         # maybe the request had issues
         if data == {}:
-            logger.debug("Got a result with no data for accession")
+            logger.warning(f"Got a result with no data for {url}")
             continue
 
         for accession in data['_embedded']['accessions']:

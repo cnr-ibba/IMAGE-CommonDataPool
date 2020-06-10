@@ -16,8 +16,8 @@ from enum import Enum
 from helpers.biosamples import (
     get_biosamples_ids, CONNECTOR as EBI_CONNECTOR, get_biosample_record)
 from helpers.backend import (
-    get_cdp_etag, post_record, put_record, CDPConverter, get_ruleset, Material,
-    CONNECTOR as CDP_CONNECTOR)
+    post_record, put_record, CDPConverter, get_ruleset, Material,
+    CONNECTOR as CDP_CONNECTOR, get_all_cdp_etags)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -32,7 +32,8 @@ class Operation(Enum):
     error = 'error'
 
 
-async def process_record(accession, ebi_session, cdp_session, converter):
+async def process_record(
+        accession, ebi_session, cdp_session, converter, cdp_etags):
     """
     Process a single BioSamples accession (BioSample ID): check etags
     in both BioSamples and CDP and if necessary CREATE/UPDATE record
@@ -47,6 +48,8 @@ async def process_record(accession, ebi_session, cdp_session, converter):
         a client session specific for CDP.
     converter : CDPConverter
         a CDPConverter instance for data conversion.
+    cdp_etags : dict
+        a dictionary for all the etags for CDP BioSamples IDs
 
     Returns
     -------
@@ -74,8 +77,8 @@ async def process_record(accession, ebi_session, cdp_session, converter):
     logger.debug(
         f'Search for {accession} ({material.name}) in CDP')
 
-    # get info from CDP using etag endpoint
-    cdp_etag = await get_cdp_etag(cdp_session, accession)
+    # get info from CDP using my_dictionary
+    cdp_etag = cdp_etags.get(accession)
 
     logger.debug(
         f"Check etags for {accession}: Biosample {ebi_etag}, CDP {cdp_etag}")
@@ -162,6 +165,9 @@ async def main():
         logger.info("Getting ruleset")
         ruleset_task = asyncio.create_task(get_ruleset(cdp_session))
 
+        # get all etags from CDP
+        cdp_etags_task = asyncio.create_task(get_all_cdp_etags(cdp_session))
+
         # limiting the number of request sent to EBI
         async with aiohttp.ClientSession(
                 connector=EBI_CONNECTOR) as ebi_session:
@@ -169,6 +175,9 @@ async def main():
             # get results from github
             # HINT: could this be synchronous?
             standard_rules, organism_rules, specimen_rules = await ruleset_task
+
+            # collect cdp etags
+            cdp_etags = await cdp_etags_task
 
             # create a new CDPConverter instance for using IMAGE ruleset
             converter = CDPConverter(
@@ -188,7 +197,8 @@ async def main():
                         accession,
                         ebi_session,
                         cdp_session,
-                        converter)
+                        converter,
+                        cdp_etags)
                 )
 
                 # append task

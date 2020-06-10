@@ -375,13 +375,28 @@ def download_specimen_data(request):
     return response
 
 
-class SmallResultsSetPagination(PageNumberPagination):
+# https://www.django-rest-framework.org/api-guide/pagination/#custom-pagination-styles
+# https://stackoverflow.com/a/40985524
+class CustomPaginationMixin():
+    """Custom Mixin to add the numer of pages in a response"""
+
+    def get_paginated_response(self, data):
+        return Response({
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'count': self.page.paginator.count,
+            'total_pages': self.page.paginator.num_pages,
+            'results': data
+        })
+
+
+class SmallResultsSetPagination(CustomPaginationMixin, PageNumberPagination):
     page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 1000000
 
 
-class LargeResultsSetPagination(PageNumberPagination):
+class LargeResultsSetPagination(CustomPaginationMixin, PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 1000000
@@ -672,3 +687,4 @@ class EtagViewSet(viewsets.ModelViewSet):
     pagination_class = LargeResultsSetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['data_source_id', 'etag']
+    ordering_fields = ['data_source_id']
