@@ -31,7 +31,7 @@ AUTH = aiohttp.BasicAuth('admin', IMPORT_PASSWORD)
 logger = logging.getLogger(__name__)
 
 
-async def get_cdp_etag(session, accession, record_type):
+async def get_cdp_etag(session, accession):
     """
     Get etag from CDP using BioSamples ID and material type
 
@@ -41,8 +41,6 @@ async def get_cdp_etag(session, accession, record_type):
         a client session object.
     accession : str
         The biosample accession id.
-    record_type : str
-        Could be 'organism' or 'specimen'.
 
     Raises
     ------
@@ -55,7 +53,7 @@ async def get_cdp_etag(session, accession, record_type):
         the CDP Etag or None (if not found)
     """
 
-    url = f"{BACKEND_URL}/{record_type}/{accession}/"
+    url = f"{BACKEND_URL}/etag/{accession}/"
     logger.debug(f"GET {url}")
 
     response = await session.get(url, headers=HEADERS)

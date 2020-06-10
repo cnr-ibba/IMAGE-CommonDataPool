@@ -74,8 +74,8 @@ async def process_record(accession, ebi_session, cdp_session, converter):
     logger.debug(
         f'Search for {accession} ({material.name}) in CDP')
 
-    # get info from CDP
-    cdp_etag = await get_cdp_etag(cdp_session, accession, material.name)
+    # get info from CDP using etag endpoint
+    cdp_etag = await get_cdp_etag(cdp_session, accession)
 
     logger.debug(
         f"Check etags for {accession}: Biosample {ebi_etag}, CDP {cdp_etag}")

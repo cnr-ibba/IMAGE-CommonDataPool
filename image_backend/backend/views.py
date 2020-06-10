@@ -19,7 +19,7 @@ from .models import (
 from .serializers import (
     SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
     SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer,
-    DADISLinkSerializer)
+    DADISLinkSerializer, EtagSerializer)
 
 
 @api_view(['GET'])
@@ -61,7 +61,8 @@ def backend_root(request, format=None):
         'file/': 'fileindex',
         'file/download/': 'file_download',
         'species/': 'species',
-        'dadis_link': 'dadis_link'
+        'dadis_link/': 'dadis_link',
+        'etag/': 'etag-list',
     }
 
     # info for debug toolbar
@@ -657,3 +658,17 @@ class DADISLinkViewSet(viewsets.ModelViewSet):
     filterset_fields = [
         'species__common_name', 'species__scientific_name', 'supplied_breed',
         'efabis_breed_country']
+
+
+class EtagViewSet(viewsets.ModelViewSet):
+    """
+    Get Info on Etags
+    """
+
+    lookup_field = "data_source_id"
+    queryset = SampleInfo.objects.all()
+    serializer_class = EtagSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = LargeResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['data_source_id', 'etag']

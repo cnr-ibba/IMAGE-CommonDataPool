@@ -6,6 +6,15 @@ from .models import (
     DADISLink)
 
 
+class EtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SampleInfo
+        fields = (
+            'data_source_id',
+            'etag'
+        )
+
+
 class FilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
