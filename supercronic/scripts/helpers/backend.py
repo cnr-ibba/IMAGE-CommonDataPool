@@ -85,6 +85,27 @@ async def get_cdp_etag(session, accession):
 
 
 async def get_all_cdp_etags(session, params=PARAMS):
+    """
+    Get all CPD etags as a dict
+
+    Parameters
+    ----------
+    session : aiohttp.ClientSession
+        an async session object.
+    params : MultiDict, optional
+        Specify query parameters. The default is PARAMS.
+
+    Raises
+    ------
+    ConnectionError
+        raised if there are connection issues.
+
+    Returns
+    -------
+    results : dict
+        A dictionary of etags for each BioSamples accessions.
+    """
+
     url = f"{BACKEND_URL}/etag/"
     logger.debug(f"GET {url}")
 
@@ -97,7 +118,7 @@ async def get_all_cdp_etags(session, params=PARAMS):
     # maybe the request had issues
     if data == {}:
         logger.warning("Got a result with no data")
-        raise ConnectionError("Can't fetch biosamples for accession")
+        raise ConnectionError("Can't fetch CDP for accession")
 
     logger.info("Got %s etags from CDP" % (data['count']))
 
@@ -125,8 +146,8 @@ async def get_all_cdp_etags(session, params=PARAMS):
         # There is no benefit to launching a million requests at once.
         # limit and wait for those before continuing the loop.
         # https://stackoverflow.com/a/54620443
-        # TODO: process a batch of tasks (however biosample request are
-        # fewer than CDP, I could increase page size as a workaround)
+        # TODO: process a batch of tasks or increase page size as a
+        # workaround)
 
     # Run awaitable objects in the aws set concurrently.
     # Return an iterator of Future objects.

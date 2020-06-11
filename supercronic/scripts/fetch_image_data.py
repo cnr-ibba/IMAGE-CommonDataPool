@@ -161,11 +161,11 @@ async def main():
     async with aiohttp.ClientSession(
             connector=CDP_CONNECTOR) as cdp_session:
 
-        # Get rules from github
+        # Get rules from github. Start a task
         logger.info("Getting ruleset")
         ruleset_task = asyncio.create_task(get_ruleset(cdp_session))
 
-        # get all etags from CDP
+        # get all etags from CDP. Start a task
         cdp_etags_task = asyncio.create_task(get_all_cdp_etags(cdp_session))
 
         # limiting the number of request sent to EBI
@@ -189,6 +189,7 @@ async def main():
             tasks = []
             counter = 0
 
+            # TODO: operate on a bacth of BioSamples id
             # go through biosample ids. async generator is not an iterable!
             async for accession in get_biosamples_ids(ebi_session):
                 # process a BioSamples record
