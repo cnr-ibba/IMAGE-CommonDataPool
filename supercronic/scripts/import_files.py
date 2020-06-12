@@ -1,6 +1,7 @@
 import click
 import requests
-from decouple import config
+
+from helpers.backend import BACKEND_URL, IMPORT_PASSWORD
 
 # the pattern used in the Project Title in EVA submission to identify IMAGE
 # related genotype data
@@ -17,8 +18,6 @@ FIELD_LIST = [
     "pipeline_name", "pipeline_version", "assembly_type", "accession",
     "description", "germline"
 ]
-IMPORT_PASSWORD = config('IMPORT_PASSWORD')
-BACKEND_URL = 'http://nginx/data_portal/backend'
 
 
 @click.command()

@@ -21,6 +21,16 @@ dadislink_detail = views.DADISLinkViewSet.as_view({
     'delete': 'destroy'
 })
 
+etag_list = views.EtagViewSet.as_view({
+    'get': 'list',
+})
+
+etag_detail = views.EtagViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+})
+
 
 urlpatterns = [
     path('organism/', views.ListOrganismsView.as_view(),
@@ -58,4 +68,6 @@ urlpatterns = [
     path('species/', species2commonnames_list, name='species'),
     path('dadis_link/', dadislink_list, name='dadis_link'),
     path('dadis_link/<int:pk>/', dadislink_detail, name='dadis_link-detail'),
+    path('etag/', etag_list, name='etag-list'),
+    path('etag/<str:data_source_id>/', etag_detail, name='etag-detail'),
 ]
