@@ -97,7 +97,7 @@ DATABASES = {
         'NAME': config('DATABASE_NAME'),
         'USER': config('DATABASE_USER'),
         'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': 'database1',  # <-- IMPORTANT: same name as docker-compose service!
+        'HOST': 'db',  # <-- IMPORTANT: same name as docker-compose service!
         'PORT': 5432,
     }
 }
