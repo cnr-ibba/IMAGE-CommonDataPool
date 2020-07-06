@@ -452,8 +452,8 @@ class CDPConverter():
         record['etag'] = etag
 
         if record['material'] == 'organism':
-            tmp_results = parse_biosample(sample, self.organism_rules)
-            record['organisms'] = [tmp_results]
+            # update record with organism rules
+            record.update(parse_biosample(sample, self.organism_rules))
 
             if 'relationships' in sample:
                 relationships = list()
@@ -469,13 +469,13 @@ class CDPConverter():
                             continue
 
                         relationships.append(relationship['target'])
-                record['organisms'][0]['child_of'] = relationships
+                record['child_of'] = relationships
 
             return record
 
         else:
-            tmp_results = parse_biosample(sample, self.specimen_rules)
-            record['specimens'] = [tmp_results]
+            # update record for specimen rules
+            record.update(parse_biosample(sample, self.specimen_rules))
 
             if 'relationships' in sample:
                 for relationship in sample['relationships']:
@@ -489,7 +489,6 @@ class CDPConverter():
                                 f"provided")
                             continue
 
-                        record['specimens'][0]['derived_from'] = \
-                            relationship['target']
+                        record['derived_from'] = relationship['target']
 
             return record
