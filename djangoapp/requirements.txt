@@ -6,3 +6,4 @@ python-decouple
 django-filter
 ipython
 django-debug-toolbar==2.2
+requests

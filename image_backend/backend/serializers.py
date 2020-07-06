@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.utils import model_meta
 
 from .models import (
     Specimen, Organism, Files, Species2CommonName,
@@ -30,6 +31,7 @@ class SpecimenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Specimen
+        fields = '__all__'
 
 
 class SpecimenSerializerShort(serializers.ModelSerializer):
@@ -83,6 +85,7 @@ class OrganismSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organism
+        fields = '__all__'
         read_only_fields = ['dadis']
 
     def create(self, validated_data):
@@ -100,6 +103,42 @@ class OrganismSerializer(serializers.ModelSerializer):
         organism = Organism.objects.create(dadis=dadis, **validated_data)
 
         return organism
+
+    def update(self, instance, validated_data):
+        """Override the default update method which doens't support nested
+        objects"""
+
+        dadis_data = validated_data.pop('dadis', None)
+
+        info = model_meta.get_field_info(instance)
+
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                field = getattr(instance, attr)
+                field.set(value)
+            else:
+                setattr(instance, attr, value)
+
+        instance.save()
+
+        # create a new DADIS object if necessary and update instance
+        if dadis_data:
+            species = dadis_data.pop('species')
+            species_obj = Species2CommonName.objects.get(**species)
+
+            # get or create a DADis object
+            dadis, _ = DADISLink.objects.get_or_create(
+                species=species_obj, **dadis_data)
+
+            # track relationship with dadis
+            instance.dadis = dadis
+            instance.save()
+
+        return instance
 
 
 class OrganismSerializerShort(serializers.ModelSerializer):
