@@ -14,11 +14,10 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (
-    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
-    DADISLink)
+    Specimen, Organism, Files, Species2CommonName, DADISLink)
 from .serializers import (
-    SpecimensSerializer, OrganismsSerializer, OrganismsSerializerShort,
-    SpecimensSerializerShort, FilesSerializer, Species2CommonNameSerializer,
+    SpecimenSerializer, OrganismSerializer, OrganismSerializerShort,
+    SpecimenSerializerShort, FilesSerializer, Species2CommonNameSerializer,
     DADISLinkSerializer, EtagSerializer)
 
 
@@ -80,22 +79,22 @@ def get_organisms_summary(request, format=None):
     sex_filter = request.GET.get('organisms__sex', False)
     country_filter = request.GET.get('organisms__efabis_breed_country', False)
 
-    results = SampleInfo.objects.prefetch_related(
-        'organisms').filter(organisms__isnull=False)
+    # gett all my organisms (amimal) in a queryset
+    results = Organism.objects.all()
 
     # update queryset with filter submitted by GET
     if species_filter:
         results = results.filter(species=species_filter)
 
     if breed_filter:
-        results = results.filter(organisms__supplied_breed=breed_filter)
+        results = results.filter(supplied_breed=breed_filter)
 
     if sex_filter:
-        results = results.filter(organisms__sex=sex_filter)
+        results = results.filter(sex=sex_filter)
 
     if country_filter:
         results = results.filter(
-            organisms__efabis_breed_country=country_filter)
+            efabis_breed_country=country_filter)
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -113,9 +112,9 @@ def get_organisms_summary(request, format=None):
 
     # count my items
     species_count = count_items('species')
-    breeds_count = count_items('organisms__supplied_breed')
-    sex_count = count_items('organisms__sex')
-    country_count = count_items('organisms__efabis_breed_country')
+    breeds_count = count_items('supplied_breed')
+    sex_count = count_items('sex')
+    country_count = count_items('efabis_breed_country')
 
     return Response({
         'species': species_count,
@@ -130,7 +129,7 @@ def get_organisms_graphical_summary(request, format=None):
     """Return statistics for IMAGE-Portal summary page"""
 
     # start queryset
-    results = AnimalInfo.objects.select_related("sample")
+    results = Organism.objects.all()
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -148,15 +147,15 @@ def get_organisms_graphical_summary(request, format=None):
 
     def count_breeds(results=results):
         qs = results.values(
-            'sample__species',
+            'species',
             'supplied_breed').annotate(
-                total=Count('sample__species')).order_by('-total')
+                total=Count('species')).order_by('-total')
 
         count = dict()
 
         # read count items
         for item in qs:
-            species = item['sample__species']
+            species = item['species']
             breed = item['supplied_breed']
             total = item['total']
 
@@ -168,7 +167,7 @@ def get_organisms_graphical_summary(request, format=None):
         return count
 
     country_count = count_items('efabis_breed_country')
-    species_count = count_items('sample__species')
+    species_count = count_items('species')
     breeds_count = count_breeds()
 
     coordinates = list()
@@ -202,9 +201,9 @@ def organisms_gis_search(request, format=None):
     latitude = convert_to_radians(request.GET.get('latitude', False))
     longitude = convert_to_radians(request.GET.get('longitude', False))
     radius = float(request.GET.get('radius', False))
-    results = SampleInfo.objects.filter(organisms__isnull=False)
-    organisms = results.exclude(organisms__birth_location_longitude='',
-                                organisms__birth_location_latitude='')
+    results = Organism.objects.all()
+    organisms = results.exclude(birth_location_longitude='',
+                                birth_location_latitude='')
     for record in organisms:
         organism = record.organisms.get()
         organism_latitude = convert_to_radians(
@@ -229,13 +228,13 @@ def download_organism_data(request):
     species_filter = request.GET.get('species', False)
     breed_filter = request.GET.get('organisms__supplied_breed', False)
     sex_filter = request.GET.get('organisms__sex', False)
-    results = SampleInfo.objects.filter(organisms__isnull=False)
+    results = Organism.objects.all()
     if species_filter:
         results = results.filter(species=species_filter)
     if breed_filter:
-        results = results.filter(organisms__supplied_breed=breed_filter)
+        results = results.filter(supplied_breed=breed_filter)
     if sex_filter:
-        results = results.filter(organisms__sex=sex_filter)
+        results = results.filter(sex=sex_filter)
     for record in results:
         organism = record.organisms.get()
         data_to_download += f'{record.data_source_id}\t{record.species}\t' \
@@ -252,15 +251,14 @@ def get_specimens_summary(request, format=None):
     species_filter = request.GET.get('species', False)
     organism_part_filter = request.GET.get('specimens__organism_part', False)
 
-    results = SampleInfo.objects.prefetch_related(
-        'specimens').filter(specimens__isnull=False)
+    results = Specimen.objects.all()
 
     # update queryset with filter submitted by GET
     if species_filter:
         results = results.filter(species=species_filter)
 
     if organism_part_filter:
-        results = results.filter(specimens__organism_part=organism_part_filter)
+        results = results.filter(organism_part=organism_part_filter)
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -277,7 +275,7 @@ def get_specimens_summary(request, format=None):
         return count
 
     species_count = count_items('species')
-    organism_count = count_items('specimens__organism_part')
+    organism_count = count_items('organism_part')
 
     return Response({
         'species': species_count,
@@ -290,7 +288,7 @@ def get_specimens_graphical_summary(request, format=None):
     """Return statistics for IMAGE-Portal summary page"""
 
     # start queryset
-    results = SampleDataInfo.objects.select_related("sample")
+    results = Specimen.objects.all()
 
     def count_items(field, results=results):
         qs = results.values(field).annotate(
@@ -333,9 +331,9 @@ def specimens_gis_search(request, format=None):
     latitude = convert_to_radians(request.GET.get('latitude', False))
     longitude = convert_to_radians(request.GET.get('longitude', False))
     radius = int(request.GET.get('radius', False))
-    results = SampleInfo.objects.filter(specimens__isnull=False)
-    specimens = results.exclude(specimens__collection_place_latitude='',
-                                specimens__collection_place_longitude='')
+    results = Specimen.objects.all()
+    specimens = results.exclude(collection_place_latitude='',
+                                collection_place_longitude='')
     for record in specimens:
         specimen = record.specimens.get()
         specimen_latitude = convert_to_radians(
@@ -359,11 +357,11 @@ def download_specimen_data(request):
     data_to_download = 'Data source ID\tSpecies\tDerived from\tOrganism part\n'
     species_filter = request.GET.get('species', False)
     organism_part_filter = request.GET.get('specimens__organism_part', False)
-    results = SampleInfo.objects.filter(specimens__isnull=False)
+    results = Specimen.objects.all()
     if species_filter:
         results = results.filter(species=species_filter)
     if organism_part_filter:
-        results = results.filter(specimens__organism_part=organism_part_filter)
+        results = results.filter(organism_part=organism_part_filter)
     for record in results:
         specimen = record.specimens.get()
         data_to_download += f'{record.data_source_id}\t{record.species}\t' \
@@ -403,7 +401,7 @@ class LargeResultsSetPagination(CustomPaginationMixin, PageNumberPagination):
 
 
 class ListSpecimensView(generics.ListCreateAPIView):
-    serializer_class = SpecimensSerializer
+    serializer_class = SpecimenSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -420,36 +418,35 @@ class ListSpecimensView(generics.ListCreateAPIView):
                      'organization_address', 'organization_country',
                      'organization_country_ontology', 'description',
                      'person_initial', 'organization_uri', 'publication_doi',
-                     'specimens__derived_from',
-                     'specimens__collection_place_accuracy',
-                     'specimens__organism_part',
-                     'specimens__organism_part_ontology',
-                     'specimens__specimen_collection_protocol',
-                     'specimens__collection_date',
-                     'specimens__collection_date_unit',
-                     'specimens__collection_place_latitude',
-                     'specimens__collection_place_latitude_unit',
-                     'specimens__collection_place_longitude',
-                     'specimens__collection_place_longitude_unit',
-                     'specimens__collection_place',
-                     'specimens__developmental_stage',
-                     'specimens__developmental_stage_ontology',
-                     'specimens__physiological_stage',
-                     'specimens__physiological_stage_ontology',
-                     'specimens__availability', 'specimens__sample_storage',
-                     'specimens__sample_storage_processing',
-                     'specimens__animal_age_at_collection',
-                     'specimens__animal_age_at_collection_unit',
-                     'specimens__sampling_to_preparation_interval',
-                     'specimens__sampling_to_preparation_interval_unit']
+                     'derived_from',
+                     'collection_place_accuracy',
+                     'organism_part',
+                     'organism_part_ontology',
+                     'specimen_collection_protocol',
+                     'collection_date',
+                     'collection_date_unit',
+                     'collection_place_latitude',
+                     'collection_place_latitude_unit',
+                     'collection_place_longitude',
+                     'collection_place_longitude_unit',
+                     'collection_place',
+                     'developmental_stage',
+                     'developmental_stage_ontology',
+                     'physiological_stage',
+                     'physiological_stage_ontology',
+                     'availability', 'sample_storage',
+                     'sample_storage_processing',
+                     'animal_age_at_collection',
+                     'animal_age_at_collection_unit',
+                     'sampling_to_preparation_interval',
+                     'sampling_to_preparation_interval_unit']
     ordering_fields = ['data_source_id']
 
     def get_queryset(self):
-        return SampleInfo.objects.prefetch_related(
-            'specimens').filter(specimens__isnull=False)
+        return Specimen.objects.all()
 
     def post(self, request, *args, **kwargs):
-        serializer = SpecimensSerializer(
+        serializer = SpecimenSerializer(
             data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
@@ -459,22 +456,21 @@ class ListSpecimensView(generics.ListCreateAPIView):
 
 
 class ListSpecimensViewShort(generics.ListCreateAPIView):
-    serializer_class = SpecimensSerializerShort
+    serializer_class = SpecimenSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter,
                        filters.OrderingFilter]
-    filterset_fields = ['species', 'specimens__organism_part']
-    search_fields = ['species', 'specimens__organism_part']
-    ordering_fields = ['data_source_id', 'species', 'specimens__derived_from',
-                       'specimens__organism_part']
+    filterset_fields = ['species', 'organism_part']
+    search_fields = ['species', 'organism_part']
+    ordering_fields = ['data_source_id', 'species', 'derived_from',
+                       'organism_part']
 
     def get_queryset(self):
-        return SampleInfo.objects.prefetch_related(
-            'specimens').filter(specimens__isnull=False)
+        return Specimen.objects.all()
 
     def post(self, request, *args, **kwargs):
-        serializer = SpecimensSerializerShort(data=request.data)
+        serializer = SpecimenSerializerShort(data=request.data)
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -483,24 +479,21 @@ class ListSpecimensViewShort(generics.ListCreateAPIView):
 
 
 class SpecimensDetailsView(generics.RetrieveUpdateDestroyAPIView):
-    # since we are searching with sampleinfo, I need to return only entries
-    # with a relationship with SampleDataInfo (specimens)
-    queryset = SampleInfo.objects.prefetch_related(
-        'specimens').filter(specimens__isnull=False)
+    queryset = Specimen.objects.all()
     lookup_field = "data_source_id"
-    serializer_class = SpecimensSerializer
+    serializer_class = SpecimenSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 
 class ListOrganismsView(generics.ListCreateAPIView):
-    serializer_class = OrganismsSerializer
+    serializer_class = OrganismSerializer
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [
         DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
-        'species', 'organisms__supplied_breed',
-        'organisms__efabis_breed_country', 'organisms__sex']
+        'species', 'supplied_breed',
+        'efabis_breed_country', 'sex']
     search_fields = ['data_source_id', 'alternative_id', 'project',
                      'submission_title', 'material', 'material_ontology',
                      'person_last_name', 'person_email', 'person_affiliation',
@@ -514,30 +507,28 @@ class ListOrganismsView(generics.ListCreateAPIView):
                      'organization_address', 'organization_country',
                      'organization_country_ontology', 'description',
                      'person_initial', 'organization_uri', 'publication_doi',
-                     'organisms__supplied_breed',
-                     'organisms__efabis_breed_country', 'organisms__sex',
-                     'organisms__sex_ontology',
-                     'organisms__birth_location_accuracy',
-                     'organisms__mapped_breed',
-                     'organisms__mapped_breed_ontology',
-                     'organisms__birth_date', 'organisms__birth_date_unit',
-                     'organisms__birth_location',
-                     'organisms__birth_location_longitude',
-                     'organisms__birth_location_longitude_unit',
-                     'organisms__birth_location_latitude',
-                     'organisms__birth_location_latitude_unit',
-                     'organisms__child_of']
+                     'supplied_breed',
+                     'efabis_breed_country', 'sex',
+                     'sex_ontology',
+                     'birth_location_accuracy',
+                     'mapped_breed',
+                     'mapped_breed_ontology',
+                     'birth_date', 'birth_date_unit',
+                     'birth_location',
+                     'birth_location_longitude',
+                     'birth_location_longitude_unit',
+                     'birth_location_latitude',
+                     'birth_location_latitude_unit',
+                     'child_of']
     ordering_fields = ['data_source_id']
 
     def get_queryset(self):
-        return SampleInfo.objects.prefetch_related(
-            'organisms',
-            "organisms__dadis",
-            "organisms__dadis__species").filter(
-                organisms__isnull=False)
+        return Organism.objects.select_related(
+            "dadis",
+            "dadis__species").all()
 
     def post(self, request, *args, **kwargs):
-        serializer = OrganismsSerializer(
+        serializer = OrganismSerializer(
             data=request.data,  context={'request': request})
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
@@ -547,24 +538,23 @@ class ListOrganismsView(generics.ListCreateAPIView):
 
 
 class ListOrganismsViewShort(generics.ListCreateAPIView):
-    serializer_class = OrganismsSerializerShort
+    serializer_class = OrganismSerializerShort
     pagination_class = SmallResultsSetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter,
                        filters.OrderingFilter]
     filterset_fields = [
-        'species', 'organisms__supplied_breed',
-        'organisms__efabis_breed_country', 'organisms__sex']
-    search_fields = ['species', 'organisms__supplied_breed', 'organisms__sex']
+        'species', 'supplied_breed',
+        'efabis_breed_country', 'sex']
+    search_fields = ['species', 'supplied_breed', 'sex']
     ordering_fields = ['data_source_id', 'species',
-                       'organisms__supplied_breed', 'organisms__sex']
+                       'supplied_breed', 'sex']
 
     def get_queryset(self):
-        return SampleInfo.objects.prefetch_related(
-            'organisms').filter(organisms__isnull=False)
+        return Organism.objects.all()
 
     def post(self, request, *args, **kwargs):
-        serializer = OrganismsSerializerShort(data=request.data)
+        serializer = OrganismSerializerShort(data=request.data)
         if serializer.is_valid(raise_exception=ValueError):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -574,11 +564,10 @@ class ListOrganismsViewShort(generics.ListCreateAPIView):
 
 class OrganismsDetailsView(generics.RetrieveUpdateDestroyAPIView):
     # since we are searching with sampleinfo, I need to return only entries
-    # with a relationship with AnimalInfo (organisms)
-    queryset = SampleInfo.objects.prefetch_related(
-        'organisms').filter(organisms__isnull=False)
+    # with a relationship with Organism (organisms)
+    queryset = Organism.objects.all()
     lookup_field = "data_source_id"
-    serializer_class = OrganismsSerializer
+    serializer_class = OrganismSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 
@@ -681,7 +670,7 @@ class EtagViewSet(viewsets.ModelViewSet):
     """
 
     lookup_field = "data_source_id"
-    queryset = SampleInfo.objects.all()
+    queryset = Organism.objects.all()
     serializer_class = EtagSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = LargeResultsSetPagination

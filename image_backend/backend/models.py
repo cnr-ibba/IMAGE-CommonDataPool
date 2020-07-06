@@ -3,7 +3,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils.http import urlquote
 
 
-class SampleInfo(models.Model):
+class BioSampleAbstract(models.Model):
     # mandatory
     data_source_id = models.CharField(max_length=1000, primary_key=True)
     alternative_id = models.CharField(max_length=1000)
@@ -50,11 +50,12 @@ class SampleInfo(models.Model):
     publication_doi = models.CharField(max_length=1000, blank=True)
 
     class Meta:
-        ordering = ['-data_source_id']
+        abstract = True
 
 
 class Files(models.Model):
     # Specimen BioSample id
+    # HINT: should be a foreign key to Specimen?
     data_source_id = models.CharField(max_length=1000, primary_key=True)
 
     file_name = ArrayField(models.CharField(max_length=1000))
@@ -67,13 +68,8 @@ class Files(models.Model):
         ordering = ['-data_source_id']
 
 
-class SampleDataInfo(models.Model):
+class Specimen(BioSampleAbstract):
     # mandatory
-    sample = models.ForeignKey(
-        SampleInfo,
-        related_name="specimens",
-        on_delete=models.CASCADE)
-
     derived_from = models.CharField(max_length=1000)
     collection_place_accuracy = models.CharField(max_length=1000)
     organism_part = models.CharField(max_length=1000)
@@ -113,6 +109,7 @@ class SampleDataInfo(models.Model):
                                                              blank=True)
 
     class Meta:
+        ordering = ['-data_source_id']
         indexes = [
             models.Index(fields=[
                 'collection_place_latitude', 'collection_place_longitude']),
@@ -183,13 +180,8 @@ class DADISLink(models.Model):
         super().save(*args, **kwargs)
 
 
-class AnimalInfo(models.Model):
+class Organism(BioSampleAbstract):
     # mandatory
-    sample = models.ForeignKey(
-        SampleInfo,
-        related_name="organisms",
-        on_delete=models.CASCADE)
-
     supplied_breed = models.CharField(max_length=1000)
     efabis_breed_country = models.CharField(max_length=1000)
     sex = models.CharField(max_length=1000)
@@ -224,6 +216,7 @@ class AnimalInfo(models.Model):
         related_name="organisms")
 
     class Meta:
+        ordering = ['-data_source_id']
         indexes = [
             models.Index(fields=['supplied_breed', 'efabis_breed_country']),
             models.Index(fields=['efabis_breed_country']),
