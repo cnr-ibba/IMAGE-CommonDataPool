@@ -208,18 +208,18 @@ if __name__ == "__main__":
         for organism in organisms:
             # since I'm searching for breed name (not exact) I need to filter
             # out partial matches
-            if organism['organisms'][0]['supplied_breed'].lower() != \
+            if organism['supplied_breed'].lower() != \
                     dadis['supplied_breed'].lower():
                 logger.warning("Skipping %s: breeds differ (%s:%s)" % (
                     organism['data_source_id'],
-                    organism['organisms'][0]['supplied_breed'],
+                    organism['supplied_breed'],
                     dadis['supplied_breed'].lower()
                     )
                 )
                 continue
 
             # test for dadis link
-            if organism['organisms'][0]['dadis']:
+            if organism['dadis']:
                 logger.debug(
                     "Skipping %s: dadis link already set" % (
                         organism['data_source_id']))
@@ -230,7 +230,7 @@ if __name__ == "__main__":
 
             # define data to patch
             data = {
-                'organisms': [{'dadis': dadis}]
+                'dadis': dadis
             }
 
             logger.debug("Patching %s" % url)
