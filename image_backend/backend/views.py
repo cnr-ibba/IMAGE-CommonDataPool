@@ -236,9 +236,8 @@ def download_organism_data(request):
     if sex_filter:
         results = results.filter(sex=sex_filter)
     for record in results:
-        organism = record.organisms.get()
         data_to_download += f'{record.data_source_id}\t{record.species}\t' \
-                            f'{organism.supplied_breed}\t{organism.sex}\n'
+                            f'{record.supplied_breed}\t{record.sex}\n'
     response = HttpResponse(data_to_download, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="IMAGE_organisms' \
                                       '.txt"'
@@ -363,10 +362,9 @@ def download_specimen_data(request):
     if organism_part_filter:
         results = results.filter(organism_part=organism_part_filter)
     for record in results:
-        specimen = record.specimens.get()
         data_to_download += f'{record.data_source_id}\t{record.species}\t' \
-                            f'{specimen.derived_from}\t' \
-                            f'{specimen.organism_part}\n'
+                            f'{record.derived_from}\t' \
+                            f'{record.organism_part}\n'
     response = HttpResponse(data_to_download, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="IMAGE_specimens' \
                                       '.txt"'

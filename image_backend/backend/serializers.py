@@ -145,7 +145,7 @@ class OrganismSerializerShort(serializers.ModelSerializer):
     class Meta:
         model = Organism
         fields = (
-            'data_source_id', 'species', 'organisms', 'supplied_breed',
+            'data_source_id', 'species', 'supplied_breed',
             'efabis_breed_country', 'sex', 'birth_location_longitude',
             'birth_location_latitude'
         )
