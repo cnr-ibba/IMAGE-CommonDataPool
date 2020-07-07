@@ -204,8 +204,7 @@ def organisms_gis_search(request, format=None):
     results = Organism.objects.all()
     organisms = results.exclude(birth_location_longitude='',
                                 birth_location_latitude='')
-    for record in organisms:
-        organism = record.organisms.get()
+    for organism in organisms:
         organism_latitude = convert_to_radians(
             organism.birth_location_latitude)
         organism_longitude = convert_to_radians(
@@ -214,8 +213,8 @@ def organisms_gis_search(request, format=None):
                      math.cos(latitude) * math.cos(organism_latitude) *
                      math.cos(organism_longitude - longitude)) * 6371 < radius:
             organism_results = {
-                'data_source_id': record.data_source_id,
-                'species': record.species,
+                'data_source_id': organism.data_source_id,
+                'species': organism.species,
                 'supplied_breed': organism.supplied_breed,
                 'sex': organism.sex
             }
@@ -333,8 +332,7 @@ def specimens_gis_search(request, format=None):
     results = Specimen.objects.all()
     specimens = results.exclude(collection_place_latitude='',
                                 collection_place_longitude='')
-    for record in specimens:
-        specimen = record.specimens.get()
+    for specimen in specimens:
         specimen_latitude = convert_to_radians(
             specimen.collection_place_latitude)
         specimen_longitude = convert_to_radians(
@@ -343,8 +341,8 @@ def specimens_gis_search(request, format=None):
                      math.cos(latitude) * math.cos(specimen_latitude) *
                      math.cos(specimen_longitude - longitude)) * 6371 < radius:
             specimen_results = {
-                'data_source_id': record.data_source_id,
-                'species': record.species,
+                'data_source_id': specimen.data_source_id,
+                'species': specimen.species,
                 'derived_from': specimen.derived_from,
                 'organism_part': specimen.organism_part
             }
