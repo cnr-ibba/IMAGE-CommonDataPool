@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.utils.http import urlquote
 
+from django_db_views.db_view import DBView
+
 
 class BioSampleAbstract(models.Model):
     # mandatory
@@ -223,3 +225,26 @@ class Organism(BioSampleAbstract):
             models.Index(fields=[
                 'birth_location_latitude', 'birth_location_longitude']),
         ]
+
+
+# using database views for etag models
+# https://github.com/BezBartek/django-db-views/blob/master/README.md
+class Etag(DBView):
+    data_source_id = models.CharField(max_length=1000)
+    etag = models.CharField(max_length=1000)
+
+    # Django requires column called id
+    view_definition = """
+        SELECT row_number() over () AS id,
+               t1.* FROM (
+                   SELECT data_source_id,
+                          etag
+                     FROM backend_organism UNION
+                   SELECT data_source_id,
+                          etag
+                     FROM backend_specimen) AS t1
+    """
+
+    class Meta:
+        managed = False
+        db_table = 'backend_etag'

@@ -2,14 +2,13 @@ from rest_framework import serializers
 from rest_framework.utils import model_meta
 
 from .models import (
-    Specimen, Organism, Files, Species2CommonName,
-    DADISLink)
+    Specimen, Organism, Files, Species2CommonName, DADISLink, Etag)
 
 
 class EtagSerializer(serializers.ModelSerializer):
     class Meta:
         # FIXME: this should return both Specimens and Organism etags
-        model = Organism
+        model = Etag
         fields = (
             'data_source_id',
             'etag'

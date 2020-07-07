@@ -14,7 +14,7 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (
-    Specimen, Organism, Files, Species2CommonName, DADISLink)
+    Specimen, Organism, Files, Species2CommonName, DADISLink, Etag)
 from .serializers import (
     SpecimenSerializer, OrganismSerializer, OrganismSerializerShort,
     SpecimenSerializerShort, FilesSerializer, Species2CommonNameSerializer,
@@ -668,7 +668,7 @@ class EtagViewSet(viewsets.ModelViewSet):
     """
 
     lookup_field = "data_source_id"
-    queryset = Organism.objects.all()
+    queryset = Etag.objects.all()
     serializer_class = EtagSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = LargeResultsSetPagination
