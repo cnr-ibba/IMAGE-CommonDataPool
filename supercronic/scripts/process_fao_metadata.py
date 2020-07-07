@@ -176,7 +176,7 @@ if __name__ == "__main__":
         # get params to do filtering
         params = {
             'species': dadis['species']['scientific_name'],
-            'organisms__efabis_breed_country': dadis['efabis_breed_country'],
+            'efabis_breed_country': dadis['efabis_breed_country'],
             # case insensitive search for supplied breed
             'search': dadis['supplied_breed'],
         }

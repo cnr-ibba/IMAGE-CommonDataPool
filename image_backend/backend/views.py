@@ -75,9 +75,9 @@ def backend_root(request, format=None):
 def get_organisms_summary(request, format=None):
     # get filters from get request
     species_filter = request.GET.get('species', False)
-    breed_filter = request.GET.get('organisms__supplied_breed', False)
-    sex_filter = request.GET.get('organisms__sex', False)
-    country_filter = request.GET.get('organisms__efabis_breed_country', False)
+    breed_filter = request.GET.get('supplied_breed', False)
+    sex_filter = request.GET.get('sex', False)
+    country_filter = request.GET.get('efabis_breed_country', False)
 
     # gett all my organisms (amimal) in a queryset
     results = Organism.objects.all()
@@ -226,8 +226,8 @@ def organisms_gis_search(request, format=None):
 def download_organism_data(request):
     data_to_download = 'Data source ID\tSpecies\tSupplied breed\tSex\n'
     species_filter = request.GET.get('species', False)
-    breed_filter = request.GET.get('organisms__supplied_breed', False)
-    sex_filter = request.GET.get('organisms__sex', False)
+    breed_filter = request.GET.get('supplied_breed', False)
+    sex_filter = request.GET.get('sex', False)
     results = Organism.objects.all()
     if species_filter:
         results = results.filter(species=species_filter)
@@ -248,7 +248,7 @@ def download_organism_data(request):
 def get_specimens_summary(request, format=None):
     # get filters from get request
     species_filter = request.GET.get('species', False)
-    organism_part_filter = request.GET.get('specimens__organism_part', False)
+    organism_part_filter = request.GET.get('organism_part', False)
 
     results = Specimen.objects.all()
 
@@ -355,7 +355,7 @@ def specimens_gis_search(request, format=None):
 def download_specimen_data(request):
     data_to_download = 'Data source ID\tSpecies\tDerived from\tOrganism part\n'
     species_filter = request.GET.get('species', False)
-    organism_part_filter = request.GET.get('specimens__organism_part', False)
+    organism_part_filter = request.GET.get('organism_part', False)
     results = Specimen.objects.all()
     if species_filter:
         results = results.filter(species=species_filter)
