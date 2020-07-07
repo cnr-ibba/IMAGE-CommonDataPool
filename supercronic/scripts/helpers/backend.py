@@ -456,7 +456,10 @@ class CDPConverter():
             record.update(parse_biosample(sample, self.organism_rules))
 
             if 'relationships' in sample:
-                relationships = list()
+                child_of = list()
+                # specimens are derived from this sample
+                specimens = list()
+
                 for relationship in sample['relationships']:
                     if relationship['type'] == 'child of':
                         if 'SAMEA' not in relationship['target']:
@@ -468,8 +471,24 @@ class CDPConverter():
                                 f"provided")
                             continue
 
-                        relationships.append(relationship['target'])
-                record['child_of'] = relationships
+                        child_of.append(relationship['target'])
+
+                    # my specimens are in the source of relationship
+                    elif relationship['type'] == 'derived from':
+                        if 'SAMEA' not in relationship['source']:
+                            logger.error(
+                                f"{sample['accession']} doesn't "
+                                f"have proper name for derived "
+                                f"from relationship, "
+                                f"{relationship['source']} "
+                                f"provided")
+                            continue
+
+                        specimens.append(relationship['source'])
+
+                # add relationship to object
+                record['child_of'] = child_of
+                record['specimens'] = specimens
 
             return record
 
