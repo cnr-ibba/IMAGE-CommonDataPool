@@ -87,6 +87,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'api_service.wsgi.application'
 
+# This tells Django to trust the X-Forwarded-Proto header
+# that comes from our proxy, and any time its value is 'https',
+# then the request is guaranteed to be secure (i.e., it originally came in via HTTPS).
+# You should only set this setting if you control your proxy or
+# have some other guarantee that it sets/strips this header appropriately.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# A boolean that specifies whether to use the X-Forwarded-Host header
+# in preference to the Host header. This should only be enabled
+# if a proxy which sets this header is in use.
+USE_X_FORWARDED_HOST = True
+
+# A boolean that specifies whether to use the X-Forwarded-Port
+# header in preference to the SERVER_PORT META variable. This
+# should only be enabled if a proxy which sets this header is in use.
+USE_X_FORWARDED_PORT = True
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
