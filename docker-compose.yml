@@ -1,4 +1,4 @@
-version: '3'
+version: '3.2'
 
 services:
 
@@ -39,13 +39,21 @@ services:
       - djangoapp
 
   db:  # <-- IMPORTANT: same name as in DATABASES setting, otherwise Django won't find the database!
-    image: postgres:10.12
+    build: ./postgis/
     env_file:
       - .env
     networks:  # <-- connect to the bridge
       - db_network
+    # to export volume, as recommeded in https://registry.hub.docker.com/u/library/mysql/
     volumes:
-      - ./postgres-data/:/var/lib/postgresql/data
+      - type: bind
+        source: ./postgis-data/
+        target: /var/lib/postgresql/data/
+
+      # # all scripts and sql file inside this directory will be executed after database initialization
+      - type: bind
+        source: ./postgis/docker-entrypoint-initdb.d/
+        target: /docker-entrypoint-initdb.d/
 
 networks:
   nginx_network:
