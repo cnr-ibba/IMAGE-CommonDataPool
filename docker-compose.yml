@@ -42,6 +42,11 @@ services:
     build: ./postgis/
     env_file:
       - .env
+    # Set db environment
+    environment:
+      # these passwords will be taken from .env file (not tracked in GIT)
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+
     networks:  # <-- connect to the bridge
       - db_network
     # to export volume, as recommeded in https://registry.hub.docker.com/u/library/mysql/
