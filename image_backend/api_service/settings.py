@@ -52,8 +52,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'debug_toolbar',
+    'django_filters',
+    'django_db_views',
     'backend',
-    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -113,7 +114,7 @@ DATABASES = {
         'NAME': config('DATABASE_NAME'),
         'USER': config('DATABASE_USER'),
         'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': 'database1',  # <-- IMPORTANT: same name as docker-compose service!
+        'HOST': 'db',  # <-- IMPORTANT: same name as docker-compose service!
         'PORT': 5432,
     }
 }

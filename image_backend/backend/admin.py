@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    SampleInfo, AnimalInfo, SampleDataInfo, Species2CommonName, DADISLink)
+    Organism, Specimen, Species2CommonName, DADISLink)
 
 
 class Species2CommonNameAdmin(admin.ModelAdmin):
@@ -13,8 +13,7 @@ class DADISLinkAdmin(admin.ModelAdmin):
     )
 
 
-admin.site.register(SampleInfo)
-admin.site.register(AnimalInfo)
-admin.site.register(SampleDataInfo)
+admin.site.register(Organism)
+admin.site.register(Specimen)
 admin.site.register(Species2CommonName, Species2CommonNameAdmin)
 admin.site.register(DADISLink, DADISLinkAdmin)

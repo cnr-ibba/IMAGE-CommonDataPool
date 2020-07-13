@@ -27,8 +27,6 @@ etag_list = views.EtagViewSet.as_view({
 
 etag_detail = views.EtagViewSet.as_view({
     'get': 'retrieve',
-    'put': 'update',
-    'patch': 'partial_update',
 })
 
 

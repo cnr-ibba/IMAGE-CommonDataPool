@@ -22,9 +22,9 @@ services:
       - ./image_backend/:/code/
     networks:
       - nginx_network
-      - database1_network  # <-- connect to the bridge
+      - db_network  # <-- connect to the bridge
     depends_on:  # <-- wait for db to be "ready" before starting the app
-      - database1
+      - db
 
   nginx:
     image: nginx:1.17
@@ -33,25 +33,22 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./image_backend/:/code/
-    depends_on:
-      - djangoapp
     networks:
       - nginx_network
+    depends_on:
+      - djangoapp
 
-  database1:  # <-- IMPORTANT: same name as in DATABASES setting, otherwise Django won't find the database!
+  db:  # <-- IMPORTANT: same name as in DATABASES setting, otherwise Django won't find the database!
     image: postgres:10.12
     env_file:
       - .env
     networks:  # <-- connect to the bridge
-      - database1_network
+      - db_network
     volumes:
-      - database1_volume:/var/lib/postgresql/data
+      - ./postgres-data/:/var/lib/postgresql/data
 
 networks:
   nginx_network:
     driver: bridge
-  database1_network:  # <-- add the bridge
+  db_network:  # <-- add the bridge
     driver: bridge
-
-volumes:
-  database1_volume:
