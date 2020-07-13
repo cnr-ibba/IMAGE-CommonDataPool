@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'rest_framework',
+    'rest_framework_gis',
     'debug_toolbar',
     'django_filters',
     'django_db_views',
@@ -110,12 +112,16 @@ USE_X_FORWARDED_PORT = True
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': config('DATABASE_NAME'),
         'USER': config('DATABASE_USER'),
         'PASSWORD': config('DATABASE_PASSWORD'),
         'HOST': 'db',  # <-- IMPORTANT: same name as docker-compose service!
         'PORT': 5432,
+        'TEST': {
+            # https://docs.djangoproject.com/en/1.11/ref/settings/#template
+            'TEMPLATE': 'template_postgis'
+        }
     }
 }
 
