@@ -3,6 +3,8 @@ import math
 
 from django.http import HttpResponse
 from django.db.models import Count
+from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.db.models.functions import Distance
 
 from rest_framework import generics, permissions, filters
 from rest_framework.decorators import api_view
@@ -11,6 +13,7 @@ from rest_framework.reverse import reverse
 from rest_framework.views import status
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework_gis.pagination import GeoJsonPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (
@@ -18,7 +21,7 @@ from .models import (
 from .serializers import (
     SpecimenSerializer, OrganismSerializer, OrganismSerializerShort,
     SpecimenSerializerShort, FilesSerializer, Species2CommonNameSerializer,
-    DADISLinkSerializer, EtagSerializer)
+    DADISLinkSerializer, EtagSerializer, GeoOrganismSerializer)
 
 
 @api_view(['GET'])
@@ -50,6 +53,7 @@ def backend_root(request, format=None):
         "organism/summary/": "organism_summary",
         "organism/graphical_summary/": "organism_graphical_summary",
         "organism/gis_search/": "organism_gis_search",
+        "organism.geojson/": "geoorganism_list",
         "organism/download/": "organism_download",
         'specimen/': 'specimenindex',
         'specimen_short/': 'specimenindex_short',
@@ -220,6 +224,37 @@ def organisms_gis_search(request, format=None):
             }
             filter_results['results'].append(organism_results)
     return Response(filter_results)
+
+
+class CustomGeoJsonPagination(GeoJsonPagination):
+    page_size = 10
+
+
+class GeoOrganismViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Organism.objects.filter(geom__isnull=False)
+    lookup_field = "data_source_id"
+    serializer_class = GeoOrganismSerializer
+    pagination_class = CustomGeoJsonPagination
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        # read params from query
+        lat = self.request.query_params.get('lat', None)
+        lng = self.request.query_params.get('lng', None)
+        rad = self.request.query_params.get('rad', None)
+
+        if lat and lng:
+            pnt = GEOSGeometry(f'POINT({lng} {lat})', srid=4326)
+            qs = qs.annotate(
+                distance=Distance('geom', pnt, spheroid=True)
+            ).order_by("distance")
+
+            if rad:
+                # express radius in km
+                qs = qs.filter(distance__lte=int(rad)*1000)
+
+        return qs
 
 
 def download_organism_data(request):

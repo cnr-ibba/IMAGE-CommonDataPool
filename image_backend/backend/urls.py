@@ -29,6 +29,14 @@ etag_detail = views.EtagViewSet.as_view({
     'get': 'retrieve',
 })
 
+geoorganism_list = views.GeoOrganismViewSet.as_view({
+    'get': 'list',
+})
+
+geoorganism_detail = views.GeoOrganismViewSet.as_view({
+    'get': 'retrieve',
+})
+
 
 urlpatterns = [
     path('organism/', views.ListOrganismsView.as_view(),
@@ -41,6 +49,12 @@ urlpatterns = [
          name='organism_graphical_summary'),
     path('organism/gis_search/', views.organisms_gis_search,
          name='organism_gis_search'),
+
+    path('organism.geojson/', geoorganism_list, name='geoorganism_list'),
+    path('organism.geojson/<str:data_source_id>/',
+         geoorganism_detail,
+         name='geoorganism_detail'),
+
     path('organism/download/', views.download_organism_data,
          name='organism_download'),
     path('organism/<data_source_id>/', views.OrganismsDetailsView.as_view(),

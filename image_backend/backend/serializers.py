@@ -1,7 +1,10 @@
 
+from collections import OrderedDict
+
 from django.contrib.gis.geos import Point
 
 from rest_framework import serializers
+from rest_framework.fields import SkipField
 from rest_framework.utils import model_meta
 
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
@@ -222,6 +225,65 @@ class OrganismSerializer(serializers.ModelSerializer):
             instance.save()
 
         return instance
+
+
+class GeoOrganismSerializer(GeoFeatureModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:geoorganism_detail',
+        lookup_field='data_source_id'
+    )
+
+    distance = serializers.DecimalField(
+        # get distance in kilometers
+        source="distance.km",
+        decimal_places=3,
+        max_digits=8,
+        read_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Organism
+        geo_field = "geom"
+        fields = (
+            "url",
+            "data_source_id",
+            "species",
+            "supplied_breed",
+            "sex",
+            "distance",
+        )
+        read_only_fields = ['distance']
+
+    # override django-rest-framework-gis.serializers
+    def get_properties(self, instance, fields):
+        """
+        Get the feature metadata which will be used for the GeoJSON
+        "properties" key.
+        By default it returns all serializer fields excluding those used for
+        the ID, the geometry and the bounding box.
+        :param instance: The current Django model instance
+        :param fields: The list of fields to process (fields already processed have been removed)
+        :return: OrderedDict containing the properties of the current feature
+        :rtype: OrderedDict
+        """
+
+        properties = OrderedDict()
+
+        for field in fields:
+            if field.write_only:
+                continue
+            # similar to django-rest-framework.serializer.to_representation
+            try:
+                value = field.get_attribute(instance)
+            except SkipField:
+                continue
+            representation = None
+            if value is not None:
+                representation = field.to_representation(value)
+            properties[field.field_name] = representation
+
+        return properties
 
 
 class OrganismSerializerShort(serializers.ModelSerializer):
