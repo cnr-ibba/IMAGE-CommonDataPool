@@ -21,7 +21,8 @@ from .models import (
 from .serializers import (
     SpecimenSerializer, OrganismSerializer, OrganismSerializerShort,
     SpecimenSerializerShort, FilesSerializer, Species2CommonNameSerializer,
-    DADISLinkSerializer, EtagSerializer, GeoOrganismSerializer)
+    DADISLinkSerializer, EtagSerializer, GeoOrganismSerializer,
+    GeoSpecimenSerializer)
 
 
 @api_view(['GET'])
@@ -60,6 +61,7 @@ def backend_root(request, format=None):
         'specimen/summary/': 'specimen_summary',
         'specimen/graphical_summary/': 'specimens_graphical_summary',
         'specimen/gis_search/': 'specimen_gis_search',
+        "specimen.geojson/": "geospecimen_list",
         'specimen/download/': 'specimen_download',
         'file/': 'fileindex',
         'file/download/': 'file_download',
@@ -230,13 +232,17 @@ class CustomGeoJsonPagination(GeoJsonPagination):
     page_size = 10
 
 
-class GeoOrganismViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Organism.objects.filter(geom__isnull=False)
-    lookup_field = "data_source_id"
-    serializer_class = GeoOrganismSerializer
-    pagination_class = CustomGeoJsonPagination
-
+class GeoMaterialMixin():
     def get_queryset(self):
+        """
+        Ovverride queryset: read location from GET request and annotate by
+        distance
+
+        Returns
+        -------
+        qs : django.db.models.query.QuerySet
+            Queryset annotated by distance if parameters are passed in request
+        """
         qs = super().get_queryset()
 
         # read params from query
@@ -255,6 +261,13 @@ class GeoOrganismViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(distance__lte=int(rad)*1000)
 
         return qs
+
+
+class GeoOrganismViewSet(GeoMaterialMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = Organism.objects.filter(geom__isnull=False)
+    lookup_field = "data_source_id"
+    serializer_class = GeoOrganismSerializer
+    pagination_class = CustomGeoJsonPagination
 
 
 def download_organism_data(request):
@@ -383,6 +396,13 @@ def specimens_gis_search(request, format=None):
             }
             filter_results['results'].append(specimen_results)
     return Response(filter_results)
+
+
+class GeoSpecimenViewSet(GeoMaterialMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = Specimen.objects.filter(geom__isnull=False)
+    lookup_field = "data_source_id"
+    serializer_class = GeoSpecimenSerializer
+    pagination_class = CustomGeoJsonPagination
 
 
 def download_specimen_data(request):
