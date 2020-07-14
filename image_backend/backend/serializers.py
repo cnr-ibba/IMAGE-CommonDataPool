@@ -1,5 +1,10 @@
+
+from django.contrib.gis.geos import Point
+
 from rest_framework import serializers
 from rest_framework.utils import model_meta
+
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from .models import (
     Specimen, Organism, Files, Species2CommonName, DADISLink, Etag)
@@ -31,6 +36,52 @@ class SpecimenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specimen
         fields = '__all__'
+        read_only_fields = ['geom']
+
+    def check_coordinates(self, validated_data):
+        geom = None
+
+        lng = validated_data.get('collection_place_longitude')
+        lat = validated_data.get('collection_place_latitude')
+
+        if lng and lat:
+            try:
+                lng = float(lng)
+                lat = float(lat)
+
+            except ValueError:
+                # I can't make a point
+                return geom
+
+            geom = Point(lng, lat, srid=4326)
+
+        return geom
+
+    def create(self, validated_data):
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        specimen = Specimen.objects.create(
+            geom=geom,
+            **validated_data
+        )
+
+        return specimen
+
+    def update(self, instance, validated_data):
+        """Override the default update method to update geom data"""
+
+        instance = super().update(instance, validated_data)
+
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        if geom:
+            # update geom coordinates
+            instance.geom = geom
+            instance.save()
+
+        return instance
 
 
 class SpecimenSerializerShort(serializers.ModelSerializer):
@@ -85,7 +136,26 @@ class OrganismSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organism
         fields = '__all__'
-        read_only_fields = ['dadis']
+        read_only_fields = ['dadis', 'geom']
+
+    def check_coordinates(self, validated_data):
+        geom = None
+
+        lng = validated_data.get('birth_location_longitude')
+        lat = validated_data.get('birth_location_latitude')
+
+        if lng and lat:
+            try:
+                lng = float(lng)
+                lat = float(lat)
+
+            except ValueError:
+                # I can't make a point
+                return geom
+
+            geom = Point(lng, lat, srid=4326)
+
+        return geom
 
     def create(self, validated_data):
         # need to get cut the dadis attribute
@@ -99,7 +169,14 @@ class OrganismSerializer(serializers.ModelSerializer):
             dadis, _ = DADISLink.objects.get_or_create(
                 species=species_obj, **dadis_data)
 
-        organism = Organism.objects.create(dadis=dadis, **validated_data)
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        organism = Organism.objects.create(
+            dadis=dadis,
+            geom=geom,
+            **validated_data
+        )
 
         return organism
 
@@ -135,6 +212,13 @@ class OrganismSerializer(serializers.ModelSerializer):
 
             # track relationship with dadis
             instance.dadis = dadis
+            instance.save()
+
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        if geom:
+            instance.geom = geom
             instance.save()
 
         return instance
