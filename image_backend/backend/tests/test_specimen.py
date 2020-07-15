@@ -123,7 +123,7 @@ class GeoJSONTestCase(CommonMixin, APITestCase):
             },
             "properties": {
                 "url": (
-                    "http://testserver/data_portal/backend/specimen.geojson/"
+                    "http://testserver/backend/specimen.geojson/"
                     "SAMEA7044739/"),
                 "species": "Gallus gallus",
                 "derived_from": "SAMEA7044752",

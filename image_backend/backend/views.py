@@ -36,7 +36,7 @@ def backend_root(request, format=None):
         """
 
         result = dict()
-        base_url = "/data_portal/backend/"
+        base_url = "/backend/"
         app_name = "backend"
 
         for path, name in params.items():

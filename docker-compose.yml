@@ -60,6 +60,10 @@ services:
         source: ./postgis/docker-entrypoint-initdb.d/
         target: /docker-entrypoint-initdb.d/
 
+    # espose a port for testing purpuse
+    ports:
+      - "25432:5432"
+
 networks:
   nginx_network:
     driver: bridge

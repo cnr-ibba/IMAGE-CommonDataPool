@@ -28,7 +28,7 @@ PARAMS = MultiDict([
 # https://docs.aiohttp.org/en/stable/client_advanced.html
 CONNECTOR = aiohttp.TCPConnector(limit=20, ttl_dns_cache=300)
 
-BACKEND_URL = 'http://nginx/data_portal/backend'
+BACKEND_URL = 'http://nginx/backend'
 IMPORT_PASSWORD = config('IMPORT_PASSWORD')
 SAMPLE_RULESET_URL = (
     'https://raw.githubusercontent.com/cnr-ibba/'
