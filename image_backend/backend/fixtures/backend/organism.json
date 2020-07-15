@@ -49,7 +49,8 @@
     "birth_location_latitude_unit": "decimal degree",
     "child_of": "[]",
     "specimens": "[]",
-    "dadis": null
+    "dadis": null,
+    "geom": "SRID=4326;POINT (10.0 51.0)"
   }
 }
 ]

@@ -122,3 +122,38 @@ class GISSearchTestCase(CommonMixin, APITestCase):
             'coordinates': [('10.000000', '51.000000')]
         }
         self.assertDictEqual(reference, test)
+
+
+class GeoJSONTestCase(CommonMixin, APITestCase):
+    def test_get_organism(self):
+        url = api_reverse("backend:geoorganism_list")
+        response = self.client.get(url)
+        data = response.data
+        self.assertEqual(data["type"], "FeatureCollection")
+        self.assertEqual(data["count"], 1)
+
+        # convert a nested OrderedDict to dict
+        test = json.loads(json.dumps(data['features'][0]))
+
+        reference = {
+            "id": "SAMEA7044752",
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    10.0,
+                    51.0
+                ]
+            },
+            "properties": {
+                "url": (
+                    "http://testserver/data_portal/backend/organism.geojson/"
+                    "SAMEA7044752/"),
+                "species": "Gallus gallus",
+                "supplied_breed": "chicken",
+                "sex": "female"
+            }
+        }
+
+        # asserta a GeoJSON object
+        self.assertDictEqual(reference, test)
