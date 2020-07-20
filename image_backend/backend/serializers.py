@@ -1,5 +1,13 @@
+
+from collections import OrderedDict
+
+from django.contrib.gis.geos import Point
+
 from rest_framework import serializers
+from rest_framework.fields import SkipField
 from rest_framework.utils import model_meta
+
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from .models import (
     Specimen, Organism, Files, Species2CommonName, DADISLink, Etag)
@@ -31,6 +39,114 @@ class SpecimenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specimen
         fields = '__all__'
+        read_only_fields = ['geom']
+
+    def check_coordinates(self, validated_data):
+        geom = None
+
+        lng = validated_data.get('collection_place_longitude')
+        lat = validated_data.get('collection_place_latitude')
+
+        if lng and lat:
+            try:
+                lng = float(lng)
+                lat = float(lat)
+
+            except ValueError:
+                # I can't make a point
+                return geom
+
+            geom = Point(lng, lat, srid=4326)
+
+        return geom
+
+    def create(self, validated_data):
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        specimen = Specimen.objects.create(
+            geom=geom,
+            **validated_data
+        )
+
+        return specimen
+
+    def update(self, instance, validated_data):
+        """Override the default update method to update geom data"""
+
+        instance = super().update(instance, validated_data)
+
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        if geom:
+            # update geom coordinates
+            instance.geom = geom
+            instance.save()
+
+        return instance
+
+
+class GeoMaterialMixin():
+    # override django-rest-framework-gis.serializers
+    def get_properties(self, instance, fields):
+        """
+        Get the feature metadata which will be used for the GeoJSON
+        "properties" key.
+        By default it returns all serializer fields excluding those used for
+        the ID, the geometry and the bounding box.
+        :param instance: The current Django model instance
+        :param fields: The list of fields to process (fields already processed
+                                                      have been removed)
+        :return: OrderedDict containing the properties of the current feature
+        :rtype: OrderedDict
+        """
+
+        properties = OrderedDict()
+
+        for field in fields:
+            if field.write_only:
+                continue
+            # similar to django-rest-framework.serializer.to_representation
+            try:
+                value = field.get_attribute(instance)
+            except SkipField:
+                continue
+            representation = None
+            if value is not None:
+                representation = field.to_representation(value)
+            properties[field.field_name] = representation
+
+        return properties
+
+
+class GeoSpecimenSerializer(GeoMaterialMixin, GeoFeatureModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:geospecimen_detail',
+        lookup_field='data_source_id'
+    )
+
+    distance = serializers.DecimalField(
+        # get distance in kilometers
+        source="distance.km",
+        decimal_places=3,
+        max_digits=8,
+        read_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Specimen
+        geo_field = "geom"
+        fields = (
+            "url",
+            "data_source_id",
+            "species",
+            "derived_from",
+            "organism_part",
+            "distance",
+        )
+        read_only_fields = ['distance']
 
 
 class SpecimenSerializerShort(serializers.ModelSerializer):
@@ -85,7 +201,26 @@ class OrganismSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organism
         fields = '__all__'
-        read_only_fields = ['dadis']
+        read_only_fields = ['dadis', 'geom']
+
+    def check_coordinates(self, validated_data):
+        geom = None
+
+        lng = validated_data.get('birth_location_longitude')
+        lat = validated_data.get('birth_location_latitude')
+
+        if lng and lat:
+            try:
+                lng = float(lng)
+                lat = float(lat)
+
+            except ValueError:
+                # I can't make a point
+                return geom
+
+            geom = Point(lng, lat, srid=4326)
+
+        return geom
 
     def create(self, validated_data):
         # need to get cut the dadis attribute
@@ -99,7 +234,14 @@ class OrganismSerializer(serializers.ModelSerializer):
             dadis, _ = DADISLink.objects.get_or_create(
                 species=species_obj, **dadis_data)
 
-        organism = Organism.objects.create(dadis=dadis, **validated_data)
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        organism = Organism.objects.create(
+            dadis=dadis,
+            geom=geom,
+            **validated_data
+        )
 
         return organism
 
@@ -137,7 +279,43 @@ class OrganismSerializer(serializers.ModelSerializer):
             instance.dadis = dadis
             instance.save()
 
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        if geom:
+            instance.geom = geom
+            instance.save()
+
         return instance
+
+
+class GeoOrganismSerializer(GeoMaterialMixin, GeoFeatureModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:geoorganism_detail',
+        lookup_field='data_source_id'
+    )
+
+    distance = serializers.DecimalField(
+        # get distance in kilometers
+        source="distance.km",
+        decimal_places=3,
+        max_digits=8,
+        read_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Organism
+        geo_field = "geom"
+        fields = (
+            "url",
+            "data_source_id",
+            "species",
+            "supplied_breed",
+            "sex",
+            "distance",
+        )
+        read_only_fields = ['distance']
 
 
 class OrganismSerializerShort(serializers.ModelSerializer):

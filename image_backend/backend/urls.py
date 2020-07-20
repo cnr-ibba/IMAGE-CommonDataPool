@@ -29,6 +29,22 @@ etag_detail = views.EtagViewSet.as_view({
     'get': 'retrieve',
 })
 
+geoorganism_list = views.GeoOrganismViewSet.as_view({
+    'get': 'list',
+})
+
+geoorganism_detail = views.GeoOrganismViewSet.as_view({
+    'get': 'retrieve',
+})
+
+geospecimen_list = views.GeoSpecimenViewSet.as_view({
+    'get': 'list',
+})
+
+geospecimen_detail = views.GeoSpecimenViewSet.as_view({
+    'get': 'retrieve',
+})
+
 
 urlpatterns = [
     path('organism/', views.ListOrganismsView.as_view(),
@@ -41,6 +57,12 @@ urlpatterns = [
          name='organism_graphical_summary'),
     path('organism/gis_search/', views.organisms_gis_search,
          name='organism_gis_search'),
+
+    path('organism.geojson/', geoorganism_list, name='geoorganism_list'),
+    path('organism.geojson/<str:data_source_id>/',
+         geoorganism_detail,
+         name='geoorganism_detail'),
+
     path('organism/download/', views.download_organism_data,
          name='organism_download'),
     path('organism/<data_source_id>/', views.OrganismsDetailsView.as_view(),
@@ -55,6 +77,12 @@ urlpatterns = [
          name='specimens_graphical_summary'),
     path('specimen/gis_search/', views.specimens_gis_search,
          name='specimen_gis_search'),
+
+    path('specimen.geojson/', geospecimen_list, name='geospecimen_list'),
+    path('specimen.geojson/<str:data_source_id>/',
+         geospecimen_detail,
+         name='geospecimen_detail'),
+
     path('specimen/download/', views.download_specimen_data,
          name='specimen_download'),
     path('specimen/<data_source_id>/', views.SpecimensDetailsView.as_view(),

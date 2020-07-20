@@ -20,10 +20,10 @@ from django.urls import path, include
 from backend.views import backend_root
 
 urlpatterns = [
-    path('data_portal/', backend_root, name='index'),
-    path('data_portal/admin/', admin.site.urls),
-    path('data_portal/backend/', include('backend.urls')),
-    path('data_portal/api-auth/', include('rest_framework.urls')),
+    path('', backend_root, name='index'),
+    path('admin/', admin.site.urls),
+    path('backend/', include('backend.urls')),
+    path('api-auth/', include('rest_framework.urls')),
 ]
 
 # set up Django debug Toolbar
@@ -36,6 +36,3 @@ if settings.DEBUG:
         # url(r'^__debug__/', include(debug_toolbar.urls)),
 
     ] + urlpatterns
-
-# customizing admin
-admin.site.site_url = "/data_portal/"

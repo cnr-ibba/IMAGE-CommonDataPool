@@ -3,6 +3,8 @@ import math
 
 from django.http import HttpResponse
 from django.db.models import Count
+from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.db.models.functions import Distance
 
 from rest_framework import generics, permissions, filters
 from rest_framework.decorators import api_view
@@ -11,6 +13,7 @@ from rest_framework.reverse import reverse
 from rest_framework.views import status
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework_gis.pagination import GeoJsonPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (
@@ -18,7 +21,8 @@ from .models import (
 from .serializers import (
     SpecimenSerializer, OrganismSerializer, OrganismSerializerShort,
     SpecimenSerializerShort, FilesSerializer, Species2CommonNameSerializer,
-    DADISLinkSerializer, EtagSerializer)
+    DADISLinkSerializer, EtagSerializer, GeoOrganismSerializer,
+    GeoSpecimenSerializer)
 
 
 @api_view(['GET'])
@@ -32,7 +36,7 @@ def backend_root(request, format=None):
         """
 
         result = dict()
-        base_url = "/data_portal/backend/"
+        base_url = "/backend/"
         app_name = "backend"
 
         for path, name in params.items():
@@ -50,12 +54,14 @@ def backend_root(request, format=None):
         "organism/summary/": "organism_summary",
         "organism/graphical_summary/": "organism_graphical_summary",
         "organism/gis_search/": "organism_gis_search",
+        "organism.geojson/": "geoorganism_list",
         "organism/download/": "organism_download",
         'specimen/': 'specimenindex',
         'specimen_short/': 'specimenindex_short',
         'specimen/summary/': 'specimen_summary',
         'specimen/graphical_summary/': 'specimens_graphical_summary',
         'specimen/gis_search/': 'specimen_gis_search',
+        "specimen.geojson/": "geospecimen_list",
         'specimen/download/': 'specimen_download',
         'file/': 'fileindex',
         'file/download/': 'file_download',
@@ -222,6 +228,48 @@ def organisms_gis_search(request, format=None):
     return Response(filter_results)
 
 
+class CustomGeoJsonPagination(GeoJsonPagination):
+    page_size = 10
+
+
+class GeoMaterialMixin():
+    def get_queryset(self):
+        """
+        Ovverride queryset: read location from GET request and annotate by
+        distance
+
+        Returns
+        -------
+        qs : django.db.models.query.QuerySet
+            Queryset annotated by distance if parameters are passed in request
+        """
+        qs = super().get_queryset()
+
+        # read params from query
+        lat = self.request.query_params.get('lat', None)
+        lng = self.request.query_params.get('lng', None)
+        rad = self.request.query_params.get('rad', None)
+
+        if lat and lng:
+            pnt = GEOSGeometry(f'POINT({lng} {lat})', srid=4326)
+            qs = qs.annotate(
+                distance=Distance('geom', pnt, spheroid=True)
+            ).order_by("distance")
+
+            if rad:
+                # express radius in km
+                qs = qs.filter(distance__lte=int(rad)*1000)
+
+        return qs
+
+
+class GeoOrganismViewSet(GeoMaterialMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = Organism.objects.filter(geom__isnull=False)
+    lookup_field = "data_source_id"
+    serializer_class = GeoOrganismSerializer
+    pagination_class = CustomGeoJsonPagination
+
+
 def download_organism_data(request):
     data_to_download = 'Data source ID\tSpecies\tSupplied breed\tSex\n'
     species_filter = request.GET.get('species', False)
@@ -348,6 +396,13 @@ def specimens_gis_search(request, format=None):
             }
             filter_results['results'].append(specimen_results)
     return Response(filter_results)
+
+
+class GeoSpecimenViewSet(GeoMaterialMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = Specimen.objects.filter(geom__isnull=False)
+    lookup_field = "data_source_id"
+    serializer_class = GeoSpecimenSerializer
+    pagination_class = CustomGeoJsonPagination
 
 
 def download_specimen_data(request):

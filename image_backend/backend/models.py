@@ -1,4 +1,4 @@
-from django.db import models
+from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.utils.http import urlquote
 
@@ -90,6 +90,10 @@ class Specimen(BioSampleAbstract):
     collection_place_longitude = models.CharField(max_length=1000, blank=True)
     collection_place_longitude_unit = models.CharField(max_length=1000,
                                                        blank=True)
+
+    # GIS coordinates
+    geom = models.PointField(srid=4326, blank=True, null=True)
+
     collection_place = models.CharField(max_length=1000, blank=True)
     developmental_stage = models.CharField(max_length=1000, blank=True)
     developmental_stage_ontology = models.CharField(
@@ -202,6 +206,9 @@ class Organism(BioSampleAbstract):
     birth_location_latitude = models.CharField(max_length=1000, blank=True)
     birth_location_latitude_unit = models.CharField(max_length=1000,
                                                     blank=True)
+
+    # GIS coordinates
+    geom = models.PointField(srid=4326, blank=True, null=True)
 
     # optional
     child_of = ArrayField(models.CharField(max_length=1000, blank=True),

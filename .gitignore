@@ -135,7 +135,7 @@ dmypy.json
 .pytype/
 
 # database dir
-postgres-data/
+postgis-data/
 
 # database backup
 *.sql.gz

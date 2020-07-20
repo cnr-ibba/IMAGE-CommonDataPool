@@ -40,10 +40,10 @@
     "specimen_collection_protocol": "",
     "collection_date": "",
     "collection_date_unit": "",
-    "collection_place_latitude": "",
-    "collection_place_latitude_unit": "",
-    "collection_place_longitude": "",
-    "collection_place_longitude_unit": "",
+    "collection_place_latitude": "51.000000",
+    "collection_place_latitude_unit": "decimal degree",
+    "collection_place_longitude": "10.000000",
+    "collection_place_longitude_unit": "decimal degree",
     "collection_place": "",
     "developmental_stage": "",
     "developmental_stage_ontology": "",
@@ -55,7 +55,8 @@
     "animal_age_at_collection": "",
     "animal_age_at_collection_unit": "",
     "sampling_to_preparation_interval": "",
-    "sampling_to_preparation_interval_unit": ""
+    "sampling_to_preparation_interval_unit": "",
+    "geom": "SRID=4326;POINT (10.0 51.0)"
   }
 }
 ]
