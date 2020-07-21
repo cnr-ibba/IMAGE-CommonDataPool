@@ -1,57 +1,13 @@
-from django.db import models
+from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.utils.http import urlquote
 
-
-EXPERIMENT_TYPE_ONTOLOGY_ID = (
-    ('EFO_0007045', 'ATAC-seq'),
-    ('EFO_0002692', 'ChIP-seq'),
-    ('EFO_0003752', 'DNase-Hypersensitivity seq'),
-    ('EFO_0007693', 'Hi-C'),
-    ('OBI_0000748', 'bisulfite sequencing'),
-    ('EFO_0002896', 'microRNA profiling by high throughput sequencing'),
-    ('EFO_0002770', 'transcription profiling by high throughput sequencing'),
-    ('EFO_0003738', 'RNA-seq of coding RNA'),
-    ('EFO_0003737', 'RNA-seq of non coding RNA'),
-    ('OBI_0002117', 'whole genome sequencing'),
-    ('', 'genotyping SNP'),
-    ('', 'genotyping SSR'),
-    ('', 'genotyping other markers')
-)
-
-EXPERIMENT_TARGET_ONTOLOGY_ID = (
-    ('SO_0001747', 'open_chromatin_region'),
-    ('GO_0006306', 'DNA methylation'),
-    ('EFO_0005031', 'input DNA'),
-    ('SO_0001700', 'histone_modification'),
-    ('GO_0000785', 'chromatin'),
-    ('CHEBI_33697', 'RNA'),
-    ('CHEBI_16991', 'deoxyribonucleic acid'),
-)
-
-BS_LIBRARY_SELECTION = (
-    ('OBI_0001863', 'whole genome bisulfite sequencing'),
-    ('OBI_0001862', 'reduced representation bisulfite-seq'),
-    ('OBI_0002086', 'Tet-assisted bisulfite sequencing assay'),
-    ('OBI_0002094', 'MethylC-Capture sequencing assay')
-)
-
-READ_STRAND = (
-    ('Not applicable', 'Not applicable'),
-    ('Sense', 'Sense'),
-    ('Antisense', 'Antisense'),
-    ('Mate 1 sense', 'Mate 1 sense'),
-    ('Mate 2 sense', 'Mate 2 sense'),
-    ('Non-stranded', 'Non-stranded'),
-)
-
-WGC_LIBRARY_SELCTION = (
-    ('Reduced representation', 'Reduced representation'),
-    ('None', 'None'),
-)
+from django_db_views.db_view import DBView
 
 
-class SampleInfo(models.Model):
+# This will be an abstract class inherited by Specimen and Organism model
+# it implements the common attributes in IMAGE-metadata rules
+class BioSampleAbstract(models.Model):
     # mandatory
     data_source_id = models.CharField(max_length=1000, primary_key=True)
     alternative_id = models.CharField(max_length=1000)
@@ -98,11 +54,12 @@ class SampleInfo(models.Model):
     publication_doi = models.CharField(max_length=1000, blank=True)
 
     class Meta:
-        ordering = ['-data_source_id']
+        abstract = True
 
 
 class Files(models.Model):
     # Specimen BioSample id
+    # HINT: should be a foreign key to Specimen?
     data_source_id = models.CharField(max_length=1000, primary_key=True)
 
     file_name = ArrayField(models.CharField(max_length=1000))
@@ -115,13 +72,8 @@ class Files(models.Model):
         ordering = ['-data_source_id']
 
 
-class SampleDataInfo(models.Model):
+class Specimen(BioSampleAbstract):
     # mandatory
-    sample = models.ForeignKey(
-        SampleInfo,
-        related_name="specimens",
-        on_delete=models.CASCADE)
-
     derived_from = models.CharField(max_length=1000)
     collection_place_accuracy = models.CharField(max_length=1000)
     organism_part = models.CharField(max_length=1000)
@@ -140,6 +92,10 @@ class SampleDataInfo(models.Model):
     collection_place_longitude = models.CharField(max_length=1000, blank=True)
     collection_place_longitude_unit = models.CharField(max_length=1000,
                                                        blank=True)
+
+    # GIS coordinates
+    geom = models.PointField(srid=4326, blank=True, null=True)
+
     collection_place = models.CharField(max_length=1000, blank=True)
     developmental_stage = models.CharField(max_length=1000, blank=True)
     developmental_stage_ontology = models.CharField(
@@ -161,126 +117,11 @@ class SampleDataInfo(models.Model):
                                                              blank=True)
 
     class Meta:
+        ordering = ['-data_source_id']
         indexes = [
             models.Index(fields=[
                 'collection_place_latitude', 'collection_place_longitude']),
         ]
-
-
-class ExperimentInfo(models.Model):
-    # mandatory
-    data_source_id = models.ForeignKey(SampleInfo, on_delete=models.CASCADE)
-    experiment_type = models.CharField(max_length=1000,
-                                       choices=EXPERIMENT_TYPE_ONTOLOGY_ID)
-    experiment_target = models.CharField(max_length=1000,
-                                         choices=EXPERIMENT_TARGET_ONTOLOGY_ID)
-
-    # optional
-    extraction_protocol = models.CharField(max_length=1000, blank=True)
-    library_preparation_location = models.TextField(blank=True)
-    library_preparation_location_longitude = models.DecimalField(
-        decimal_places=10, max_digits=20, null=True)
-    library_preparation_location_latitude = models.DecimalField(
-        decimal_places=10, max_digits=20, null=True)
-    library_preparation_date = models.DateField(null=True)
-    sequencing_location = models.TextField(blank=True)
-    sequencing_date = models.DateField(null=True)
-    experimental_protocol = models.CharField(max_length=1000, blank=True)
-    sequencing_location_longitude = models.DecimalField(
-        decimal_places=10, max_digits=20, null=True)
-    sequencing_location_latitude = models.DecimalField(
-        decimal_places=10, max_digits=20, null=True)
-
-
-class AtacSeqInfo(models.Model):
-    # optional
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    transposase_protocol = models.CharField(max_length=1000, blank=True)
-
-
-class BisulfiteSequencingInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    library_selection = models.CharField(max_length=1000,
-                                         choices=BS_LIBRARY_SELECTION)
-    bisulfite_conversion_protocol = models.CharField(max_length=1000)
-    pcr_product_isolation_protocol = models.CharField(max_length=1000)
-    bisulfite_conversion_percentage = models.IntegerField()
-
-    # optional
-    restriction_enzyme = models.CharField(max_length=1000, blank=True)
-    maximum_fragment_size_selection_range = models.IntegerField(null=True)
-    minimum_fragment_size_selection_range = models.IntegerField(null=True)
-
-
-class ChipSeqInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    chip_protocol = models.CharField(max_length=1000)
-    library_generation_maximum_fragment_size_range = models.IntegerField()
-    library_generation_minimum_fragment_size_range = models.IntegerField()
-
-
-class ChipSeqHistoneModificationInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    chip_antibody_provider = models.TextField()
-    chip_antibody_catalog = models.TextField()
-    chip_antibody_lot = models.TextField()
-
-
-class DnaseHypersensitivitySeqInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    dnase_protocol = models.CharField(max_length=1000)
-
-
-class HiCInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    restriction_enzyme = models.CharField(max_length=1000)
-    restriction_site = models.TextField()
-
-
-class RnaSeqInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    rna_preparation_3_adapter_ligation_protocol = models.CharField(
-        max_length=1000)
-    rna_preparation_5_adapter_ligation_protocol = models.CharField(
-        max_length=1000)
-    library_generation_pcr_product_isolation_protocol = models.CharField(
-        max_length=1000)
-    preparation_reverse_transcription_protocol = models.CharField(
-        max_length=1000)
-    library_generation_protocol = models.CharField(max_length=1000)
-    read_strand = models.CharField(max_length=1000, choices=READ_STRAND)
-
-    # optional
-    rna_purity_260_280_ratio = models.DecimalField(decimal_places=2,
-                                                   max_digits=10, null=True)
-    rna_purity_260_230_ratio = models.DecimalField(decimal_places=2,
-                                                   max_digits=10, null=True)
-    rna_integrity_number = models.DecimalField(decimal_places=2,
-                                               max_digits=10, null=True)
-
-
-class WholeGenomeSequencingInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    library_generation_pcr_product_isolation_protocol = models.CharField(
-        max_length=1000)
-    library_generation_protocol = models.CharField(max_length=1000)
-
-    # optional
-    library_selection = models.CharField(max_length=1000,
-                                         choices=WGC_LIBRARY_SELCTION)
-
-
-class GenotypingInfo(models.Model):
-    # mandatory
-    sample = models.OneToOneField(ExperimentInfo, on_delete=models.CASCADE)
-    genotyping_protocol = models.CharField(max_length=1000)
 
 
 class Species2CommonName(models.Model):
@@ -347,13 +188,8 @@ class DADISLink(models.Model):
         super().save(*args, **kwargs)
 
 
-class AnimalInfo(models.Model):
+class Organism(BioSampleAbstract):
     # mandatory
-    sample = models.ForeignKey(
-        SampleInfo,
-        related_name="organisms",
-        on_delete=models.CASCADE)
-
     supplied_breed = models.CharField(max_length=1000)
     efabis_breed_country = models.CharField(max_length=1000)
     sex = models.CharField(max_length=1000)
@@ -373,6 +209,9 @@ class AnimalInfo(models.Model):
     birth_location_latitude_unit = models.CharField(max_length=1000,
                                                     blank=True)
 
+    # GIS coordinates
+    geom = models.PointField(srid=4326, blank=True, null=True)
+
     # optional
     child_of = ArrayField(models.CharField(max_length=1000, blank=True),
                           size=2, blank=True)
@@ -388,9 +227,34 @@ class AnimalInfo(models.Model):
         related_name="organisms")
 
     class Meta:
+        ordering = ['-data_source_id']
         indexes = [
             models.Index(fields=['supplied_breed', 'efabis_breed_country']),
             models.Index(fields=['efabis_breed_country']),
             models.Index(fields=[
                 'birth_location_latitude', 'birth_location_longitude']),
         ]
+
+
+# using database views to simulate the old etag model. Return etags for
+# both organisms and specimens (used while updating features)
+# https://github.com/BezBartek/django-db-views/blob/master/README.md
+class Etag(DBView):
+    data_source_id = models.CharField(max_length=1000)
+    etag = models.CharField(max_length=1000)
+
+    # Django requires column called id
+    view_definition = """
+        SELECT row_number() over () AS id,
+               t1.* FROM (
+                   SELECT data_source_id,
+                          etag
+                     FROM backend_organism UNION
+                   SELECT data_source_id,
+                          etag
+                     FROM backend_specimen) AS t1
+    """
+
+    class Meta:
+        managed = False
+        db_table = 'backend_etag'

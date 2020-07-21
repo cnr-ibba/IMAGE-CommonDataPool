@@ -1,4 +1,4 @@
-version: '3'
+version: '3.2'
 
 services:
 
@@ -22,9 +22,9 @@ services:
       - ./image_backend/:/code/
     networks:
       - nginx_network
-      - database1_network  # <-- connect to the bridge
+      - db_network  # <-- connect to the bridge
     depends_on:  # <-- wait for db to be "ready" before starting the app
-      - database1
+      - db
 
   nginx:
     image: nginx:1.17
@@ -33,25 +33,39 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./image_backend/:/code/
-    depends_on:
-      - djangoapp
     networks:
       - nginx_network
+    depends_on:
+      - djangoapp
 
-  database1:  # <-- IMPORTANT: same name as in DATABASES setting, otherwise Django won't find the database!
-    image: postgres:10.12
+  db:  # <-- IMPORTANT: same name as in DATABASES setting, otherwise Django won't find the database!
+    build: ./postgis/
     env_file:
       - .env
+    # Set db environment
+    environment:
+      # these passwords will be taken from .env file (not tracked in GIT)
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+
     networks:  # <-- connect to the bridge
-      - database1_network
+      - db_network
+    # to export volume, as recommeded in https://registry.hub.docker.com/u/library/mysql/
     volumes:
-      - database1_volume:/var/lib/postgresql/data
+      - type: bind
+        source: ./postgis-data/
+        target: /var/lib/postgresql/data/
+
+      # # all scripts and sql file inside this directory will be executed after database initialization
+      - type: bind
+        source: ./postgis/docker-entrypoint-initdb.d/
+        target: /docker-entrypoint-initdb.d/
+
+    # espose a port for testing purpuse
+    ports:
+      - "25432:5432"
 
 networks:
   nginx_network:
     driver: bridge
-  database1_network:  # <-- add the bridge
+  db_network:  # <-- add the bridge
     driver: bridge
-
-volumes:
-  database1_volume:

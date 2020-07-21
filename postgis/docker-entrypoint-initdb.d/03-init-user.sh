@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    -- Creating image user
+    CREATE USER $DATABASE_USER PASSWORD '$DATABASE_PASSWORD';
+
+    -- Assigning privileges to $IMAGE_USER
+    ALTER USER $DATABASE_USER CREATEDB;
+    GRANT ALL PRIVILEGES ON DATABASE $DATABASE_NAME TO $DATABASE_USER;
+EOSQL

@@ -134,5 +134,8 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+# database dir
+postgis-data/
+
 # database backup
 *.sql.gz

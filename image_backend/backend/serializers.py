@@ -1,14 +1,22 @@
+
+from collections import OrderedDict
+
+from django.contrib.gis.geos import Point
+
 from rest_framework import serializers
+from rest_framework.fields import SkipField
 from rest_framework.utils import model_meta
 
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
+
 from .models import (
-    SampleInfo, AnimalInfo, SampleDataInfo, Files, Species2CommonName,
-    DADISLink)
+    Specimen, Organism, Files, Species2CommonName, DADISLink, Etag)
 
 
 class EtagSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SampleInfo
+        # this will return data from a database view
+        model = Etag
         fields = (
             'data_source_id',
             'etag'
@@ -22,29 +30,132 @@ class FilesSerializer(serializers.ModelSerializer):
                   'file_checksum', 'file_checksum_method')
 
 
-class SampleDataInfoSerializer(serializers.ModelSerializer):
+class SpecimenSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:specimendetail',
+        lookup_field='data_source_id'
+    )
+
     class Meta:
-        model = SampleDataInfo
+        model = Specimen
+        fields = '__all__'
+        read_only_fields = ['geom']
+
+    def check_coordinates(self, validated_data):
+        geom = None
+
+        lng = validated_data.get('collection_place_longitude')
+        lat = validated_data.get('collection_place_latitude')
+
+        if lng and lat:
+            try:
+                lng = float(lng)
+                lat = float(lat)
+
+            except ValueError:
+                # I can't make a point
+                return geom
+
+            geom = Point(lng, lat, srid=4326)
+
+        return geom
+
+    def create(self, validated_data):
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        specimen = Specimen.objects.create(
+            geom=geom,
+            **validated_data
+        )
+
+        return specimen
+
+    def update(self, instance, validated_data):
+        """Override the default update method to update geom data"""
+
+        instance = super().update(instance, validated_data)
+
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
+
+        if geom:
+            # update geom coordinates
+            instance.geom = geom
+            instance.save()
+
+        return instance
+
+
+class GeoMaterialMixin():
+    # override django-rest-framework-gis.serializers
+    def get_properties(self, instance, fields):
+        """
+        Get the feature metadata which will be used for the GeoJSON
+        "properties" key.
+        By default it returns all serializer fields excluding those used for
+        the ID, the geometry and the bounding box.
+        :param instance: The current Django model instance
+        :param fields: The list of fields to process (fields already processed
+                                                      have been removed)
+        :return: OrderedDict containing the properties of the current feature
+        :rtype: OrderedDict
+        """
+
+        properties = OrderedDict()
+
+        for field in fields:
+            if field.write_only:
+                continue
+            # similar to django-rest-framework.serializer.to_representation
+            try:
+                value = field.get_attribute(instance)
+            except SkipField:
+                continue
+            representation = None
+            if value is not None:
+                representation = field.to_representation(value)
+            properties[field.field_name] = representation
+
+        return properties
+
+
+class GeoSpecimenSerializer(GeoMaterialMixin, GeoFeatureModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:geospecimen_detail',
+        lookup_field='data_source_id'
+    )
+
+    distance = serializers.DecimalField(
+        # get distance in kilometers
+        source="distance.km",
+        decimal_places=3,
+        max_digits=8,
+        read_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Specimen
+        geo_field = "geom"
         fields = (
-            'derived_from', 'collection_place_accuracy', 'organism_part',
-            'organism_part_ontology', 'specimen_collection_protocol',
-            'collection_date', 'collection_date_unit',
-            'collection_place_latitude', 'collection_place_latitude_unit',
-            'collection_place_longitude',
-            'collection_place_longitude_unit', 'collection_place',
-            'developmental_stage', 'developmental_stage_ontology',
-            'physiological_stage', 'physiological_stage_ontology',
-            'availability', 'sample_storage', 'sample_storage_processing',
-            'animal_age_at_collection', 'animal_age_at_collection_unit',
-            'sampling_to_preparation_interval',
-            'sampling_to_preparation_interval_unit')
+            "url",
+            "data_source_id",
+            "species",
+            "derived_from",
+            "organism_part",
+            "distance",
+        )
+        read_only_fields = ['distance']
 
 
-class SampleDataInfoSerializerShort(serializers.ModelSerializer):
+class SpecimenSerializerShort(serializers.ModelSerializer):
     class Meta:
-        model = SampleDataInfo
-        fields = ('derived_from', 'organism_part',
-                  'collection_place_latitude', 'collection_place_longitude')
+        model = Specimen
+        fields = (
+            'data_source_id', 'species', 'derived_from', 'organism_part',
+            'collection_place_latitude', 'collection_place_longitude'
+        )
 
 
 class Species2CommonNameSerializer(serializers.ModelSerializer):
@@ -79,156 +190,67 @@ class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
         return dadis
 
 
-class AnimalInfoSerializer(serializers.ModelSerializer):
+class OrganismSerializer(serializers.ModelSerializer):
     dadis = DADISLinkSerializer(many=False, required=False, allow_null=True)
 
-    class Meta:
-        model = AnimalInfo
-        fields = ('supplied_breed', 'efabis_breed_country', 'sex',
-                  'sex_ontology', 'birth_location_accuracy', 'mapped_breed',
-                  'mapped_breed_ontology', 'birth_date', 'birth_date_unit',
-                  'birth_location', 'birth_location_longitude',
-                  'birth_location_longitude_unit', 'birth_location_latitude',
-                  'birth_location_latitude_unit', 'child_of', 'specimens',
-                  'dadis')
-        read_only_fields = ['dadis']
-
-
-class AnimalInfoSerializerShort(serializers.ModelSerializer):
-    class Meta:
-        model = AnimalInfo
-        fields = ('supplied_breed', 'efabis_breed_country', 'sex',
-                  'birth_location_longitude', 'birth_location_latitude')
-
-
-class SpecimensSerializer(serializers.HyperlinkedModelSerializer):
-    url = serializers.HyperlinkedIdentityField(
-        view_name='backend:specimendetail',
-        lookup_field='data_source_id'
-    )
-
-    specimens = SampleDataInfoSerializer(many=True)
-
-    class Meta:
-        model = SampleInfo
-        fields = ('url', 'data_source_id', 'alternative_id', 'project',
-                  'submission_title', 'material', 'material_ontology',
-                  'person_last_name', 'person_email', 'person_affiliation',
-                  'person_role', 'person_role_ontology', 'organization_name',
-                  'organization_role', 'organization_role_ontology',
-                  'gene_bank_name', 'gene_bank_country',
-                  'gene_bank_country_ontology', 'data_source_type',
-                  'data_source_version', 'species', 'species_ontology', 'etag',
-                  'submission_description', 'person_first_name',
-                  'organization_address', 'organization_country',
-                  'organization_country_ontology', 'description',
-                  'person_initial', 'organization_uri', 'publication_doi',
-                  'specimens')
-
-    def create(self, validated_data):
-        specimens_data = validated_data.pop('specimens')
-        sample = SampleInfo.objects.create(**validated_data)
-        for specimen in specimens_data:
-            SampleDataInfo.objects.create(sample=sample, **specimen)
-        return sample
-
-    def __update_instance(self, instance, validated_data):
-        # ok update SampleInfo
-        info = model_meta.get_field_info(instance)
-
-        # Simply set each attribute on the instance, and then save it.
-        # Note that unlike `.create()` we don't need to treat many-to-many
-        # relationships as being a special case. During updates we already
-        # have an instance pk for the relationships to be associated with.
-        for attr, value in validated_data.items():
-            if attr in info.relations and info.relations[attr].to_many:
-                field = getattr(instance, attr)
-                field.set(value)
-            else:
-                setattr(instance, attr, value)
-
-        instance.save()
-
-        return instance
-
-    def update(self, instance, validated_data):
-        specimens_data = validated_data.pop('specimens', None)
-
-        # ok update SampleInfo
-        instance = self.__update_instance(instance, validated_data)
-
-        if specimens_data:
-            # HACK: there will be only one specimen for each sample
-            specimen = instance.specimens.first()
-            specimen_data = specimens_data[0]
-
-            # update specimen
-            specimen = self.__update_instance(specimen, specimen_data)
-
-        return instance
-
-
-class SpecimensSerializerShort(serializers.ModelSerializer):
-    specimens = SampleDataInfoSerializerShort(many=True)
-
-    class Meta:
-        model = SampleInfo
-        fields = ('data_source_id', 'species', 'specimens')
-
-    def create(self, validated_data):
-        specimens_data = validated_data.pop('specimens')
-        sample = SampleInfo.objects.create(**validated_data)
-        for specimen in specimens_data:
-            SampleDataInfo.objects.create(sample=sample, **specimen)
-        return sample
-
-
-class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
     url = serializers.HyperlinkedIdentityField(
         view_name='backend:organismdetail',
         lookup_field='data_source_id'
     )
 
-    organisms = AnimalInfoSerializer(many=True)
-
     class Meta:
-        model = SampleInfo
-        fields = ('url', 'data_source_id', 'alternative_id', 'project',
-                  'submission_title', 'material', 'material_ontology',
-                  'person_last_name', 'person_email', 'person_affiliation',
-                  'person_role', 'person_role_ontology', 'organization_name',
-                  'organization_role', 'organization_role_ontology',
-                  'gene_bank_name', 'gene_bank_country',
-                  'gene_bank_country_ontology', 'data_source_type',
-                  'data_source_version', 'species', 'species_ontology', 'etag',
-                  'submission_description', 'person_first_name',
-                  'organization_address', 'organization_country',
-                  'organization_country_ontology', 'description',
-                  'person_initial', 'organization_uri', 'publication_doi',
-                  'organisms')
+        model = Organism
+        fields = '__all__'
+        read_only_fields = ['dadis', 'geom']
+
+    def check_coordinates(self, validated_data):
+        geom = None
+
+        lng = validated_data.get('birth_location_longitude')
+        lat = validated_data.get('birth_location_latitude')
+
+        if lng and lat:
+            try:
+                lng = float(lng)
+                lat = float(lat)
+
+            except ValueError:
+                # I can't make a point
+                return geom
+
+            geom = Point(lng, lat, srid=4326)
+
+        return geom
 
     def create(self, validated_data):
-        organisms_data = validated_data.pop('organisms')
-        sample = SampleInfo.objects.create(**validated_data)
+        # need to get cut the dadis attribute
+        dadis_data = validated_data.pop('dadis', None)
+        dadis = None
 
-        for organism in organisms_data:
-            # need to get cut the dadis attribute
-            dadis_data = organism.pop('dadis', None)
-            dadis = None
+        # create a new DADIS object
+        if dadis_data:
+            species = dadis_data.pop('species')
+            species_obj = Species2CommonName.objects.get(**species)
+            dadis, _ = DADISLink.objects.get_or_create(
+                species=species_obj, **dadis_data)
 
-            # create a new DADIS object
-            if dadis_data:
-                species = dadis_data.pop('species')
-                species_obj = Species2CommonName.objects.get(**species)
-                dadis, _ = DADISLink.objects.get_or_create(
-                    species=species_obj, **dadis_data)
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
 
-            AnimalInfo.objects.create(dadis=dadis, sample=sample, **organism)
+        organism = Organism.objects.create(
+            dadis=dadis,
+            geom=geom,
+            **validated_data
+        )
 
-        return sample
+        return organism
 
-    def __update_instance(self, instance, validated_data):
-        # ok update SampleInfo
+    def update(self, instance, validated_data):
+        """Override the default update method which doens't support nested
+        objects"""
+
+        dadis_data = validated_data.pop('dadis', None)
+
         info = model_meta.get_field_info(instance)
 
         # Simply set each attribute on the instance, and then save it.
@@ -244,51 +266,63 @@ class OrganismsSerializer(serializers.HyperlinkedModelSerializer):
 
         instance.save()
 
-        return instance
+        # create a new DADIS object if necessary and update instance
+        if dadis_data:
+            species = dadis_data.pop('species')
+            species_obj = Species2CommonName.objects.get(**species)
 
-    def update(self, instance, validated_data):
-        organisms_data = validated_data.pop('organisms', None)
+            # get or create a DADis object
+            dadis, _ = DADISLink.objects.get_or_create(
+                species=species_obj, **dadis_data)
 
-        # ok update SampleInfo
-        instance = self.__update_instance(instance, validated_data)
+            # track relationship with dadis
+            instance.dadis = dadis
+            instance.save()
 
-        if organisms_data:
-            # HACK: there will be only one organism for each sample
-            organism = instance.organisms.first()
-            organism_data = organisms_data[0]
+        # check coordinates
+        geom = self.check_coordinates(validated_data)
 
-            # not sure about this
-            dadis_data = organism_data.pop('dadis', None)
-
-            # update organism
-            organism = self.__update_instance(organism, organism_data)
-
-            # create a new DADIS object if necessary and update instance
-            if dadis_data:
-                species = dadis_data.pop('species')
-                species_obj = Species2CommonName.objects.get(**species)
-
-                # get or create a DADis object
-                dadis, _ = DADISLink.objects.get_or_create(
-                    species=species_obj, **dadis_data)
-
-                # track relationship with dadis
-                organism.dadis = dadis
-                organism.save()
+        if geom:
+            instance.geom = geom
+            instance.save()
 
         return instance
 
 
-class OrganismsSerializerShort(serializers.ModelSerializer):
-    organisms = AnimalInfoSerializerShort(many=True)
+class GeoOrganismSerializer(GeoMaterialMixin, GeoFeatureModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='backend:geoorganism_detail',
+        lookup_field='data_source_id'
+    )
+
+    distance = serializers.DecimalField(
+        # get distance in kilometers
+        source="distance.km",
+        decimal_places=3,
+        max_digits=8,
+        read_only=True,
+        required=False
+    )
 
     class Meta:
-        model = SampleInfo
-        fields = ('data_source_id', 'species', 'organisms')
+        model = Organism
+        geo_field = "geom"
+        fields = (
+            "url",
+            "data_source_id",
+            "species",
+            "supplied_breed",
+            "sex",
+            "distance",
+        )
+        read_only_fields = ['distance']
 
-    def create(self, validated_data):
-        organisms_data = validated_data.pop('organisms')
-        sample = SampleInfo.objects.create(**validated_data)
-        for organism in organisms_data:
-            AnimalInfo.objects.create(sample=sample, **organism)
-        return sample
+
+class OrganismSerializerShort(serializers.ModelSerializer):
+    class Meta:
+        model = Organism
+        fields = (
+            'data_source_id', 'species', 'supplied_breed',
+            'efabis_breed_country', 'sex', 'birth_location_longitude',
+            'birth_location_latitude'
+        )
