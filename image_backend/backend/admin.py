@@ -1,4 +1,5 @@
 
+# it seems that SimpleListFilter isn't provided by django.contrib.gis.admin
 from django.contrib.admin import SimpleListFilter
 from django.contrib.gis import admin
 
@@ -17,10 +18,8 @@ class PersonEmailListFilter(SimpleListFilter):
     parameter_name = 'person_email'
 
     def lookups(self, request, model_admin):
-        print(self)
-        print(model_admin)
-
-        # query and sort all keywords belonging to Items
+        # query and sort all email belonging to model (access to it through
+        # model property)
         person_email = model_admin.model.objects.values_list(
             "person_email", flat=True)
 
@@ -35,9 +34,8 @@ class PersonEmailListFilter(SimpleListFilter):
 
     def queryset(self, request, queryset):
         # when a user clicks on a filter, this method gets called. The
-        # provided queryset with be a queryset of Items, so we need to
+        # provided queryset with be a queryset of models, so we need to
         # filter that based on the clicked person_email.
-
         lookup_value = self.value()
 
         # The clicked person_email. It can be None!
@@ -51,6 +49,7 @@ class OrganismAdmin(admin.OSMGeoAdmin):
     list_display = (
         'data_source_id', 'gene_bank_country', 'species', 'person_email',
         'supplied_breed')
+    # Using custom filter in order to filter using ArrayField
     list_filter = [PersonEmailListFilter, 'species', 'gene_bank_country']
     search_fields = ['data_source_id', 'supplied_breed']
     list_per_page = 25
@@ -60,6 +59,7 @@ class SpecimenAdmin(admin.OSMGeoAdmin):
     list_display = (
         'data_source_id', 'gene_bank_country', 'species', 'person_email',
         'organism_part', 'derived_from')
+    # Using custom filter in order to filter using ArrayField
     list_filter = [PersonEmailListFilter, 'species', 'gene_bank_country']
     search_fields = ['data_source_id', 'derived_from']
     list_per_page = 25

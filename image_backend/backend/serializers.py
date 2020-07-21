@@ -15,7 +15,7 @@ from .models import (
 
 class EtagSerializer(serializers.ModelSerializer):
     class Meta:
-        # FIXME: this should return both Specimens and Organism etags
+        # this will return data from a database view
         model = Etag
         fields = (
             'data_source_id',

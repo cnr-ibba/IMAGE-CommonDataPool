@@ -5,6 +5,8 @@ from django.utils.http import urlquote
 from django_db_views.db_view import DBView
 
 
+# This will be an abstract class inherited by Specimen and Organism model
+# it implements the common attributes in IMAGE-metadata rules
 class BioSampleAbstract(models.Model):
     # mandatory
     data_source_id = models.CharField(max_length=1000, primary_key=True)
@@ -234,7 +236,8 @@ class Organism(BioSampleAbstract):
         ]
 
 
-# using database views for etag models
+# using database views to simulate the old etag model. Return etags for
+# both organisms and specimens (used while updating features)
 # https://github.com/BezBartek/django-db-views/blob/master/README.md
 class Etag(DBView):
     data_source_id = models.CharField(max_length=1000)
