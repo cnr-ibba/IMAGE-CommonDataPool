@@ -1,4 +1,4 @@
-Django==2.2.14
+Django==2.2.16
 django-db-views
 django-debug-toolbar==2.2
 django-filter
