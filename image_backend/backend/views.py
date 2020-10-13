@@ -709,7 +709,7 @@ class DADISLinkViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'species__common_name', 'species__scientific_name', 'supplied_breed',
-        'efabis_breed_country']
+        'efabis_breed_country', 'is_custom']
 
 
 class EtagViewSet(viewsets.ModelViewSet):

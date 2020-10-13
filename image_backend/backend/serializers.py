@@ -180,6 +180,7 @@ class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
             'supplied_breed',
             'efabis_breed_country',
             'dadis_url',
+            'is_custom'
         )
 
     def create(self, validated_data):

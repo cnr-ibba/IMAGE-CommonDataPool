@@ -148,6 +148,12 @@ class DADISLink(models.Model):
         max_length=255,
         null=True,
         blank=True)
+    is_custom = models.BooleanField(
+        default=False,
+        help_text=(
+            "Is a custom DAD-IS link or is derived automatically "
+            "from DAD-IS?")
+        )
 
     class Meta:
         unique_together = (

@@ -52,7 +52,8 @@ class Command(BaseCommand):
                 species=species,
                 supplied_breed=row.supplied_breed,
                 efabis_breed_country=row.efabis_breed_country,
-                dadis_url=row.dadis_url
+                dadis_url=row.dadis_url,
+                is_custom=True
             )
 
             if created:
