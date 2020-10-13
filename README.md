@@ -19,6 +19,12 @@ $ docker-compose run --rm djangoapp python manage.py migrate
 $ docker-compose run --rm djangoapp python manage.py collectstatic
 ```
 
+Populate DADIS table with custom links
+
+```
+$ docker-compose run --rm djangoapp python manage.py fillDAD-IS
+```
+
 Create superuser:
 
 ```
