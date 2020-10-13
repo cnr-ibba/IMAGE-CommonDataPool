@@ -255,7 +255,7 @@ class GeoMaterialMixin():
 
             if rad:
                 # express radius in km
-                qs = qs.filter(distance__lte=int(rad)*1000)
+                qs = qs.filter(distance__lte=float(rad)*1000)
 
         return qs
 
