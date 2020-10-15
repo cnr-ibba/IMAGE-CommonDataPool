@@ -31,6 +31,8 @@ SESSION = None
 # a function to get the list of common species from data_portal
 # TODO: can I return a dict from CDP?
 def get_species2commonname():
+    """Query CDP and resolve common name -> scientific name for species"""
+
     global SESSION
 
     response = SESSION.get(BACKEND_URL + '/species/')
@@ -52,7 +54,10 @@ def get_species2commonname():
 
 
 # a function to get back fao metadata
-def get_metadata(filename="Report_Export_Data.csv"):
+def get_fao_metadata(filename="Report_Export_Data.csv"):
+    """Read the downloaded FAO table and return an iterator through FAO
+    records"""
+
     pattern = re.compile(r"(.*)_\((.*)\)_?(.*)")
 
     def sanitize(col, pattern=pattern):
@@ -117,11 +122,14 @@ def get_metadata(filename="Report_Export_Data.csv"):
     handle.close()
 
 
-def process_record(commonnames2species):
+def parse_fao_records(commonnames2species):
+    """Process each FAO records and return an iterator giving only the
+    data I need for my CDP updates"""
+
     # great. Now process fao data and filter only the species I have
     for record in filter(
             lambda x: x.specie in commonnames2species.keys(),
-            get_metadata()):
+            get_fao_metadata()):
 
         # get common name
         common_name = record.specie
@@ -144,12 +152,62 @@ def process_record(commonnames2species):
         yield data
 
 
-if __name__ == "__main__":
-    logger.info("Starting process_fao_metadata")
+def process_custom_records():
+    """Search in CDP for custom links to FAO data (supplied breeds that don't
+    match the efabis_breed_name but which we know the correspondance with FAO
+    data)"""
 
-    # start a session with CDP
-    SESSION = requests.Session()
-    SESSION.auth = ('admin', IMPORT_PASSWORD)
+    global SESSION
+
+    # a manually added DAD-IS link (where the supplied_breed doesn't match the
+    # FAO breed name) is supposed to be a CUSTOM (=manually added) record
+    params = {'is_custom': True}
+
+    logger.info("Search CDP for custom DAD-IS links")
+
+    response = SESSION.get(
+        BACKEND_URL + "/dadis_link/",
+        params=params)
+
+    response_data = response.json()
+
+    if response_data['count'] == 0:
+        logger.debug("No custom DAD-IS link in database")
+        return
+
+    logger.debug("Got %s records for %s" % (
+        response_data['count'], params))
+
+    # Ok take results and append considering pagination
+    dadis_records = response_data['results']
+
+    while response_data['next']:
+        response = SESSION.get(response_data['next'])
+        response_data = response.json()
+        dadis_records += response_data['results']
+
+    # now process custom records
+    for dadis in dadis_records:
+        params = {
+            'species': dadis['species']['scientific_name'],
+            'efabis_breed_country': dadis['efabis_breed_country'],
+            # case insensitive search for supplied breed
+            'search': dadis['supplied_breed'],
+        }
+
+        # test and update my organism if necessary
+        update_organism(params, dadis)
+
+    logger.info("Custom DAD-IS annotation completed")
+
+
+def process_fao_records():
+    """Get data from CDP database and try to find the FAO records needed to
+    update CDP (DAD-IS table and organism link to such table)"""
+
+    global SESSION
+
+    logger.info("Search into FAO table and trying to update CDP")
 
     # get species to common names
     SPECIES2COMMON, COMMON2SPECIES = get_species2commonname()
@@ -162,7 +220,7 @@ if __name__ == "__main__":
     summary_breeds = [breed.lower() for breed in summary['breed']]
 
     # get data from FAO files and post to CDP
-    for dadis in process_record(COMMON2SPECIES):
+    for dadis in parse_fao_records(COMMON2SPECIES):
         # filter agains my countries
         if dadis['efabis_breed_country'] not in summary['country']:
             logger.debug("Skipping %s: Country not in CDP" % dadis)
@@ -181,71 +239,92 @@ if __name__ == "__main__":
             'search': dadis['supplied_breed'],
         }
 
-        # need to get all organism by species scientific name, country and
-        # supplied breed
-        response = SESSION.get(BACKEND_URL + "/organism/", params=params)
-        response_data = response.json()
+        # test and update my organism if necessary
+        update_organism(params, dadis)
 
-        if response_data['count'] == 0:
-            logger.debug("Skipping %s: Breed not in CDP" % dadis)
+    logger.info("FAO table processing complete")
+
+
+def update_organism(params, dadis):
+    # need to get all organism by species scientific name, country and
+    # supplied breed
+    response = SESSION.get(BACKEND_URL + "/organism/", params=params)
+    response_data = response.json()
+
+    if response_data['count'] == 0:
+        logger.debug("Skipping %s: Breed not in CDP" % params)
+        return
+
+    logger.debug("Got %s records for %s" % (
+        response_data['count'], params))
+
+    # Ok take results and append considering pagination
+    organisms = response_data['results']
+
+    while response_data['next']:
+        response = SESSION.get(response_data['next'])
+        response_data = response.json()
+        organisms += response_data['results']
+
+    # count how many insert I did
+    counter = 0
+
+    # now update organisms dadis record
+    for organism in organisms:
+        # since I'm searching for breed name (not exact) I need to filter
+        # out partial matches
+        if organism['supplied_breed'].lower() != \
+                dadis['supplied_breed'].lower():
+            logger.warning("Skipping %s: breeds differ (%s:%s)" % (
+                organism['data_source_id'],
+                organism['supplied_breed'],
+                dadis['supplied_breed'].lower()
+                )
+            )
             continue
 
-        logger.debug("Got %s records for %s" % (
-            response_data['count'], params))
+        # test for dadis link
+        if organism['dadis']:
+            logger.debug(
+                "Skipping %s: dadis link already set" % (
+                    organism['data_source_id']))
+            continue
 
-        # Ok take results and append considering pagination
-        organisms = response_data['results']
+        # get the unique URL
+        url = organism['url']
 
-        while response_data['next']:
-            response = SESSION.get(response_data['next'])
-            response_data = response.json()
-            organisms += response_data['results']
+        # define data to patch
+        data = {
+            'dadis': dadis
+        }
 
-        # count how many insert I did
-        counter = 0
+        logger.debug("Patching %s" % url)
 
-        # now update organisms dadis record
-        for organism in organisms:
-            # since I'm searching for breed name (not exact) I need to filter
-            # out partial matches
-            if organism['supplied_breed'].lower() != \
-                    dadis['supplied_breed'].lower():
-                logger.warning("Skipping %s: breeds differ (%s:%s)" % (
-                    organism['data_source_id'],
-                    organism['supplied_breed'],
-                    dadis['supplied_breed'].lower()
-                    )
-                )
-                continue
+        # patch object
+        response = SESSION.patch(url, json=data)
 
-            # test for dadis link
-            if organism['dadis']:
-                logger.debug(
-                    "Skipping %s: dadis link already set" % (
-                        organism['data_source_id']))
-                continue
+        if response.status_code != 200:
+            logger.error(response.text)
 
-            # get the unique URL
-            url = organism['url']
+        counter += 1
 
-            # define data to patch
-            data = {
-                'dadis': dadis
-            }
+    # block for a single record
+    if counter > 0:
+        logger.info("Updated %s record for %s" % (counter, dadis))
 
-            logger.debug("Patching %s" % url)
 
-            # patch object
-            response = SESSION.patch(url, json=data)
+if __name__ == "__main__":
+    logger.info("Starting process_fao_metadata")
 
-            if response.status_code != 200:
-                logger.error(response.text)
+    # start a session with CDP
+    SESSION = requests.Session()
+    SESSION.auth = ('admin', IMPORT_PASSWORD)
 
-            counter += 1
+    # read data from FAO CSV table and update database
+    process_fao_records()
 
-        # block for a single record
-        if counter > 0:
-            logger.info("Updated %s record for %s" % (counter, dadis))
+    # read data from custom records and update database
+    process_custom_records()
 
     # cicle for all records in dadis table
     logger.info("process_fao_metadata completed")
