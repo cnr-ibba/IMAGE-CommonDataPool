@@ -146,7 +146,9 @@ def parse_fao_records(commonnames2species):
         data = {
             'species': species,
             'supplied_breed': record.most_common_name,
-            'efabis_breed_country': record.country
+            'efabis_breed_country': record.country,
+            'transboundary_name': record.transboundary_name,
+            'other_name': record.other_name
         }
 
         yield data
@@ -229,6 +231,21 @@ def process_fao_records():
         # filter also by breeds in summary
         if dadis['supplied_breed'].lower() not in summary_breeds:
             logger.debug("Skipping %s: Breed not in CDP" % dadis)
+
+            if dadis['transboundary_name'].lower() in summary_breeds:
+                logger.warning(
+                    "%s: the supplied breed doesn't match, however "
+                    "I found a match in transboundary_name: %s" %
+                    (dadis, dadis['transboundary_name'])
+                )
+
+            elif dadis['other_name'].lower() in summary_breeds:
+                logger.warning(
+                    "%s: the supplied breed doesn't match, however "
+                    "I found a match in other_name: %s" %
+                    (dadis, dadis['other_name'])
+                )
+
             continue
 
         # get params to do filtering
