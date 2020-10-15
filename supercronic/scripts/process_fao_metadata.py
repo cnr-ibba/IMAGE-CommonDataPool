@@ -54,7 +54,7 @@ def get_species2commonname():
 
 
 # a function to get back fao metadata
-def get_fao_metadata(filename="Report_Export_Data.csv"):
+def get_fao_metadata(filename="20201015_Report_Export_Data.csv"):
     """Read the downloaded FAO table and return an iterator through FAO
     records"""
 
@@ -128,11 +128,11 @@ def parse_fao_records(commonnames2species):
 
     # great. Now process fao data and filter only the species I have
     for record in filter(
-            lambda x: x.specie in commonnames2species.keys(),
+            lambda x: x.species in commonnames2species.keys(),
             get_fao_metadata()):
 
         # get common name
-        common_name = record.specie
+        common_name = record.species
 
         # get scientific name from my dictionary
         scientific_name = commonnames2species[common_name]
