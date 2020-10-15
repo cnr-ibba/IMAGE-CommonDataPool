@@ -139,15 +139,36 @@ class Species2CommonName(models.Model):
 
 
 class DADISLink(models.Model):
+    # records used to determine the correspondance in my organisms
     species = models.ForeignKey(
         Species2CommonName,
         on_delete=models.CASCADE)
+
     supplied_breed = models.CharField(max_length=255)
-    efabis_breed_country = models.CharField(max_length=255)
+    country = models.CharField(max_length=255)
+
+    # those records track the efabis fields
+    most_common_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True)
+
+    transboundary_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True)
+
+    other_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True)
+
+    # the link to the dad-is detail page
     dadis_url = models.URLField(
         max_length=255,
         null=True,
         blank=True)
+
     is_custom = models.BooleanField(
         default=False,
         help_text=(
@@ -157,7 +178,7 @@ class DADISLink(models.Model):
 
     class Meta:
         unique_together = (
-            "species", "supplied_breed", "efabis_breed_country")
+            "species", "supplied_breed", "country")
         ordering = ['-id']
 
     @classmethod
@@ -166,7 +187,7 @@ class DADISLink(models.Model):
             species__scientific_name=adict['species']['scientific_name'],
             species__common_name=adict['species']['common_name'],
             supplied_breed=adict['supplied_breed'],
-            efabis_breed_country=adict['efabis_breed_country'],
+            country=adict['country'],
             )
 
         # should be one or None
@@ -176,18 +197,17 @@ class DADISLink(models.Model):
         return "%s,%s,%s" % (
             self.species.common_name,
             self.supplied_breed,
-            self.efabis_breed_country)
+            self.country)
 
     def save(self, *args, **kwargs):
         if self.dadis_url is None or self.dadis_url == '':
             self.dadis_url = (
-                "https://dadis-breed-4eff5.firebaseapp.com/?country="
+                "https://fao-dadis-breed-detail.firebaseapp.com/?country="
                 "{country}&specie={specie}&breed={breed}"
-                "&callback=allbreeds"
             ).format(
-                country=self.efabis_breed_country,
+                country=urlquote(self.country),
                 specie=urlquote(self.species.common_name),
-                breed=urlquote(self.supplied_breed)
+                breed=urlquote(self.most_common_name)
             )
 
         # call the base method

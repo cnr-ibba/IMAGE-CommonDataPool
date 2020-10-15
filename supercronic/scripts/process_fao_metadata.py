@@ -145,8 +145,8 @@ def parse_fao_records(commonnames2species):
         # now create a dictionary for my object
         data = {
             'species': species,
-            'supplied_breed': record.most_common_name,
-            'efabis_breed_country': record.country,
+            'most_common_name': record.most_common_name,
+            'country': record.country,
             'transboundary_name': record.transboundary_name,
             'other_name': record.other_name
         }
@@ -192,7 +192,7 @@ def process_custom_records():
     for dadis in dadis_records:
         params = {
             'species': dadis['species']['scientific_name'],
-            'efabis_breed_country': dadis['efabis_breed_country'],
+            'country': dadis['country'],
             # case insensitive search for supplied breed
             'search': dadis['supplied_breed'],
         }
@@ -224,12 +224,12 @@ def process_fao_records():
     # get data from FAO files and post to CDP
     for dadis in parse_fao_records(COMMON2SPECIES):
         # filter agains my countries
-        if dadis['efabis_breed_country'] not in summary['country']:
+        if dadis['country'] not in summary['country']:
             logger.debug("Skipping %s: Country not in CDP" % dadis)
             continue
 
         # filter also by breeds in summary
-        if dadis['supplied_breed'].lower() not in summary_breeds:
+        if dadis['most_common_name'].lower() not in summary_breeds:
             logger.debug("Skipping %s: Breed not in CDP" % dadis)
 
             if dadis['transboundary_name'].lower() in summary_breeds:
@@ -248,12 +248,12 @@ def process_fao_records():
 
             continue
 
-        # get params to do filtering
+        # get params to do filtering in organism endpoint
         params = {
             'species': dadis['species']['scientific_name'],
-            'efabis_breed_country': dadis['efabis_breed_country'],
+            'country': dadis['country'],
             # case insensitive search for supplied breed
-            'search': dadis['supplied_breed'],
+            'search': dadis['most_common_name'],
         }
 
         # test and update my organism if necessary
@@ -291,11 +291,11 @@ def update_organism(params, dadis):
         # since I'm searching for breed name (not exact) I need to filter
         # out partial matches
         if organism['supplied_breed'].lower() != \
-                dadis['supplied_breed'].lower():
+                dadis['most_common_name'].lower():
             logger.warning("Skipping %s: breeds differ (%s:%s)" % (
                 organism['data_source_id'],
                 organism['supplied_breed'],
-                dadis['supplied_breed'].lower()
+                dadis['most_common_name'].lower()
                 )
             )
             continue
@@ -310,9 +310,13 @@ def update_organism(params, dadis):
         # get the unique URL
         url = organism['url']
 
+        # add supplied breed to dadis dictionary (mandatory for updates)
+        tmp = dadis.copy()
+        tmp['supplied_breed'] = organism['supplied_breed']
+
         # define data to patch
         data = {
-            'dadis': dadis
+            'dadis': tmp
         }
 
         logger.debug("Patching %s" % url)

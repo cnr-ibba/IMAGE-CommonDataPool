@@ -178,7 +178,10 @@ class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'species',
             'supplied_breed',
-            'efabis_breed_country',
+            'country',
+            'most_common_name',
+            'transboundary_name',
+            'other_name',
             'dadis_url',
             'is_custom'
         )

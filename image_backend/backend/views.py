@@ -706,10 +706,15 @@ class DADISLinkViewSet(viewsets.ModelViewSet):
     serializer_class = DADISLinkSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = LargeResultsSetPagination
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = [
         'species__common_name', 'species__scientific_name', 'supplied_breed',
-        'efabis_breed_country', 'is_custom']
+        'country', 'is_custom']
+    search_fields = [
+        'supplied_breed',
+        'most_common_name',
+        'transboundary_name',
+        'other_name']
 
 
 class EtagViewSet(viewsets.ModelViewSet):

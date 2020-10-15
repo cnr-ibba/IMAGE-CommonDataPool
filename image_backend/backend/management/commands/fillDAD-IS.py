@@ -36,7 +36,7 @@ class Command(BaseCommand):
         handle = open(filename)
         reader = csv.reader(handle, delimiter=";")
 
-        # species;supplied_breed;efabis_breed_country;dadis_url
+        # species;supplied_breed;country;most_common_name;transboundary_name;other_name
         header = next(reader)
 
         # define data type
@@ -51,8 +51,10 @@ class Command(BaseCommand):
             instance, created = DADISLink.objects.update_or_create(
                 species=species,
                 supplied_breed=row.supplied_breed,
-                efabis_breed_country=row.efabis_breed_country,
-                dadis_url=row.dadis_url,
+                country=row.country,
+                most_common_name=row.most_common_name,
+                transboundary_name=row.transboundary_name,
+                other_name=row.other_name,
                 is_custom=True
             )
 
