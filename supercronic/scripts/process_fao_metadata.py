@@ -192,13 +192,15 @@ def process_custom_records():
     for dadis in dadis_records:
         params = {
             'species': dadis['species']['scientific_name'],
-            'country': dadis['country'],
+            'efabis_breed_country': dadis['country'],
             # case insensitive search for supplied breed
             'search': dadis['supplied_breed'],
         }
 
-        # test and update my organism if necessary
-        update_organism(params, dadis)
+        # test and update my organism if necessary, relying on custom record
+        # 'supplied_breed' column (that must match the organism.supplied_breed
+        # I want to annotate)
+        update_organism(params, dadis, check_key='supplied_breed')
 
     logger.info("Custom DAD-IS annotation completed")
 
@@ -251,18 +253,18 @@ def process_fao_records():
         # get params to do filtering in organism endpoint
         params = {
             'species': dadis['species']['scientific_name'],
-            'country': dadis['country'],
+            'efabis_breed_country': dadis['country'],
             # case insensitive search for supplied breed
             'search': dadis['most_common_name'],
         }
 
         # test and update my organism if necessary
-        update_organism(params, dadis)
+        update_organism(params, dadis, check_key='most_common_name')
 
     logger.info("FAO table processing complete")
 
 
-def update_organism(params, dadis):
+def update_organism(params, dadis, check_key='most_common_name'):
     # need to get all organism by species scientific name, country and
     # supplied breed
     response = SESSION.get(BACKEND_URL + "/organism/", params=params)
@@ -291,11 +293,11 @@ def update_organism(params, dadis):
         # since I'm searching for breed name (not exact) I need to filter
         # out partial matches
         if organism['supplied_breed'].lower() != \
-                dadis['most_common_name'].lower():
+                dadis[check_key].lower():
             logger.warning("Skipping %s: breeds differ (%s:%s)" % (
                 organism['data_source_id'],
                 organism['supplied_breed'],
-                dadis['most_common_name'].lower()
+                dadis[check_key].lower()
                 )
             )
             continue
