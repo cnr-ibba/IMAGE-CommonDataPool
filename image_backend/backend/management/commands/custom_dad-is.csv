@@ -1,3 +1,3 @@
-species;supplied_breed;country;most_common_name;transboundary_name;other_name
-"Ovis aries";"Schoonebeek heath";"Netherlands";"Schoonebeeker Heideschaap";"Schoonebeek heath sheep";""
-"Ovis aries";"Mergelland sheep";"Netherlands";"Mergelland Schaap";"Mergelland Scheep";""
+species;supplied_breed;country;most_common_name;transboundary_name;other_name;dadis_url
+"Ovis aries";"Schoonebeek heath";"Netherlands";"Schoonebeeker Heideschaap";"Schoonebeek heath sheep";"";"https://fao-dadis-breed-detail.firebaseapp.com/?country=Netherlands&specie=Sheep&breed=Schoonebeeker%20Heideschaap"
+"Ovis aries";"Mergelland sheep";"Netherlands";"Mergelland Schaap";"Mergelland Scheep";"";"https://fao-dadis-breed-detail.firebaseapp.com/?country=Netherlands&specie=Sheep&breed=Mergelland%20Schaap"

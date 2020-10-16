@@ -62,6 +62,7 @@ class Command(BaseCommand):
                 most_common_name=row.most_common_name,
                 transboundary_name=row.transboundary_name,
                 other_name=other_name,
+                dadis_url=row.dadis_url,
                 is_custom=True
             )
 

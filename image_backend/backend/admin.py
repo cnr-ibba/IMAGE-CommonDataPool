@@ -75,6 +75,13 @@ class DADISLinkAdmin(admin.ModelAdmin):
         'species', 'supplied_breed', 'country', 'most_common_name',
         'transboundary_name', 'other_name', 'dadis_url', 'is_custom'
     )
+    list_filter = ['species', 'country']
+    search_fields = [
+        'supplied_breed',
+        'most_common_name',
+        'transboundary_name',
+        'other_name'
+    ]
     list_per_page = 25
 
     def get_form(self, request, obj=None, **kwargs):
