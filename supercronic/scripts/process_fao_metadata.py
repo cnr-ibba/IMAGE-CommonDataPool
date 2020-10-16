@@ -237,25 +237,27 @@ def process_fao_records():
             logger.debug("Skipping %s: Country not in CDP" % dadis)
             continue
 
-        # filter also by breeds in summary
-        if dadis['most_common_name'].lower() not in summary_breeds:
-            logger.debug("Skipping %s: Breed not in CDP" % dadis)
+        # this will be the dad-is column used for linking dadis
+        check_key = None
 
-            if dadis['transboundary_name'].lower() in summary_breeds:
-                logger.warning(
-                    "%s: the supplied breed doesn't match, however "
-                    "I found a match in transboundary_name: %s" %
-                    (dadis, dadis['transboundary_name'])
-                )
+        if dadis['most_common_name'].lower() in summary_breeds:
+            check_key = 'most_common_name'
+            logger.info(
+                f"{dadis}: Found a match in {check_key}: {dadis[check_key]}")
 
-            else:
-                for name in dadis['other_name']:
-                    if name.lower() in summary_breeds:
-                        logger.warning(
-                            "%s: the supplied breed doesn't match, however "
-                            "I found a match in other_name: %s" %
-                            (dadis, dadis['other_name'])
-                        )
+        elif dadis['transboundary_name'].lower() in summary_breeds:
+            check_key = 'transboundary_name'
+            logger.info(
+                f"{dadis}: Found a match in {check_key}: {dadis[check_key]}")
+
+        else:
+            for name in dadis['other_name']:
+                if name.lower() in summary_breeds:
+                    logger.warning(
+                        "%s: the supplied breed doesn't match, however "
+                        "I found a match in other_name: %s" %
+                        (dadis, dadis['other_name'])
+                    )
 
             continue
 
@@ -264,11 +266,11 @@ def process_fao_records():
             'species': dadis['species']['scientific_name'],
             'efabis_breed_country': dadis['country'],
             # case insensitive search for supplied breed
-            'search': dadis['most_common_name'],
+            'search': dadis[check_key],
         }
 
         # test and update my organism if necessary
-        update_organism(params, dadis, check_key='most_common_name')
+        update_organism(params, dadis, check_key)
 
     logger.info("FAO table processing complete")
 
