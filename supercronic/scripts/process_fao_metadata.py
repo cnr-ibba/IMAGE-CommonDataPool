@@ -237,40 +237,60 @@ def process_fao_records():
             logger.debug("Skipping %s: Country not in CDP" % dadis)
             continue
 
+        # get params to do filtering in organism endpoint
+        params = {
+            'species': dadis['species']['scientific_name'],
+            'efabis_breed_country': dadis['country'],
+        }
+
         # this will be the dad-is column used for linking dadis
         check_key = None
 
         if dadis['most_common_name'].lower() in summary_breeds:
             check_key = 'most_common_name'
-            logger.info(
+
+            # case insensitive search for supplied breed
+            params['search'] = dadis[check_key]
+
+            logger.debug(
                 f"{dadis}: Found a match in {check_key}: {dadis[check_key]}")
 
         elif dadis['transboundary_name'].lower() in summary_breeds:
             check_key = 'transboundary_name'
-            logger.info(
+
+            # case insensitive search for supplied breed
+            params['search'] = dadis[check_key]
+
+            logger.debug(
                 f"{dadis}: Found a match in {check_key}: {dadis[check_key]}")
 
         else:
             for name in dadis['other_name']:
                 if name.lower() in summary_breeds:
-                    logger.warning(
-                        "%s: the supplied breed doesn't match, however "
-                        "I found a match in other_name: %s" %
-                        (dadis, dadis['other_name'])
+                    check_key = 'other_name'
+
+                    # case insensitive search for supplied breed
+                    params['search'] = name
+
+                    logger.debug(
+                        f"{dadis}: Found a match in {check_key}: "
+                        f"{dadis[check_key]}"
                     )
 
-            continue
+                    break
 
-        # get params to do filtering in organism endpoint
-        params = {
-            'species': dadis['species']['scientific_name'],
-            'efabis_breed_country': dadis['country'],
-            # case insensitive search for supplied breed
-            'search': dadis[check_key],
-        }
+                # a match in other name array
 
-        # test and update my organism if necessary
-        update_organism(params, dadis, check_key)
+            # a cicle in other name
+
+        # Here I should have found a match somewhere or not. If I do, I have
+        # a search attribute to get a list of organism to update
+        if 'search' in params:
+            # test and update my organism if necessary
+            update_organism(params, dadis, check_key)
+
+        else:
+            logger.debug("Skipping %s: Breed not in CDP" % dadis)
 
     logger.info("FAO table processing complete")
 
@@ -303,7 +323,26 @@ def update_organism(params, dadis, check_key='most_common_name'):
     for organism in organisms:
         # since I'm searching for breed name (not exact) I need to filter
         # out partial matches
-        if organism['supplied_breed'].lower() != \
+
+        # check other_name first, since its a special case
+        if check_key == 'other_name':
+            other_name = [name.lower() for name in dadis['other_name']]
+            if organism['supplied_breed'].lower() not in other_name:
+                logger.warning("Skipping %s: breeds differ (%s:%s)" % (
+                    organism['data_source_id'],
+                    organism['supplied_breed'],
+                    other_name
+                    )
+                )
+                continue
+
+            logger.debug(
+                f"Found a match in {check_key}: {organism['supplied_breed']}"
+                f": {other_name}"
+            )
+
+        # check most common name and transboundary breeds
+        elif organism['supplied_breed'].lower() != \
                 dadis[check_key].lower():
             logger.warning("Skipping %s: breeds differ (%s:%s)" % (
                 organism['data_source_id'],
@@ -313,7 +352,14 @@ def update_organism(params, dadis, check_key='most_common_name'):
             )
             continue
 
-        # test for dadis link
+        logger.debug(
+            f"Found a match in {check_key}: {organism['supplied_breed']}"
+            f": {dadis[check_key]}"
+        )
+
+        # test for dadis link in my organism. If already set, I don't need an
+        # update.
+        # TODO: could fetch this with a REST query?
         if organism['dadis']:
             logger.debug(
                 "Skipping %s: dadis link already set" % (
@@ -344,7 +390,8 @@ def update_organism(params, dadis, check_key='most_common_name'):
 
     # block for a single record
     if counter > 0:
-        logger.info("Updated %s record for %s" % (counter, dadis))
+        logger.info(
+            f"Updated {counter} record for '{params['search']}': {dadis}")
 
 
 if __name__ == "__main__":
