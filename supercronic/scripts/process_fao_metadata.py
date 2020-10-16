@@ -142,13 +142,20 @@ def parse_fao_records(commonnames2species):
             'common_name': common_name,
             'scientific_name': scientific_name}
 
+        # deal with other name
+        other_name = []
+
+        if record.other_name is not None and record.other_name != "":
+            other_name = [
+                name.strip() for name in record.other_name.split(",")]
+
         # now create a dictionary for my object
         data = {
             'species': species,
             'most_common_name': record.most_common_name,
             'country': record.country,
             'transboundary_name': record.transboundary_name,
-            'other_name': record.other_name
+            'other_name': other_name
         }
 
         yield data
@@ -241,12 +248,14 @@ def process_fao_records():
                     (dadis, dadis['transboundary_name'])
                 )
 
-            elif dadis['other_name'].lower() in summary_breeds:
-                logger.warning(
-                    "%s: the supplied breed doesn't match, however "
-                    "I found a match in other_name: %s" %
-                    (dadis, dadis['other_name'])
-                )
+            else:
+                for name in dadis['other_name']:
+                    if name.lower() in summary_breeds:
+                        logger.warning(
+                            "%s: the supplied breed doesn't match, however "
+                            "I found a match in other_name: %s" %
+                            (dadis, dadis['other_name'])
+                        )
 
             continue
 

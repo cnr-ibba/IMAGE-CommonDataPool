@@ -47,6 +47,13 @@ class Command(BaseCommand):
             species = Species2CommonName.objects.get(
                 scientific_name=row.species)
 
+            # deal with other name
+            other_name = []
+
+            if row.other_name is not None and row.other_name != "":
+                other_name = [
+                    name.strip() for name in row.other_name.split(",")]
+
             # create a record
             instance, created = DADISLink.objects.update_or_create(
                 species=species,
@@ -54,7 +61,7 @@ class Command(BaseCommand):
                 country=row.country,
                 most_common_name=row.most_common_name,
                 transboundary_name=row.transboundary_name,
-                other_name=row.other_name,
+                other_name=other_name,
                 is_custom=True
             )
 

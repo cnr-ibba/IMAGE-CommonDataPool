@@ -158,10 +158,14 @@ class DADISLink(models.Model):
         null=True,
         blank=True)
 
-    other_name = models.CharField(
-        max_length=255,
+    other_name = ArrayField(
+        models.CharField(
+            max_length=255,
+        ),
+        default=list,
         null=True,
-        blank=True)
+        blank=True
+    )
 
     # the link to the dad-is detail page
     dadis_url = models.URLField(
