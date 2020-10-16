@@ -31,7 +31,25 @@ SESSION = None
 # a function to get the list of common species from data_portal
 # TODO: can I return a dict from CDP?
 def get_species2commonname():
-    """Query CDP and resolve common name -> scientific name for species"""
+    """
+    Query CDP /species/ endpoint and try to resolve the coorrespondance
+    bretween common name (used in dadis for species)and scientific name
+    used in CDP
+
+    Raises
+    ------
+    Exception
+        Called if it's not possible to query CDP endpoint
+
+    Returns
+    -------
+    species2commonnames : dict
+        A dictionary with CDP scientific name as keys and common names as
+        values for species
+    commonnames2species : dict
+        A dictionary with common names as key and scientific names as
+        values for species
+    """
 
     global SESSION
 
@@ -55,8 +73,22 @@ def get_species2commonname():
 
 # a function to get back fao metadata
 def get_fao_metadata(filename="20201015_Report_Export_Data.csv"):
-    """Read the downloaded FAO table and return an iterator through FAO
-    records"""
+    """
+    Read the downloaded FAO table, sanitize column name and returns an
+    iterator of collections.namedtuple where attributes are table column
+    names (lowercase, replacing spaces with "_")
+
+    Parameters
+    ----------
+    filename : string, optional
+        Local path of downloaded FAO metadata table.
+        The default is "20201015_Report_Export_Data.csv".
+
+    Yields
+    ------
+    collections.namedtuple
+        A single FAO metadata table record.
+    """
 
     pattern = re.compile(r"(.*)_\((.*)\)_?(.*)")
 
@@ -123,8 +155,25 @@ def get_fao_metadata(filename="20201015_Report_Export_Data.csv"):
 
 
 def parse_fao_records(commonnames2species):
-    """Process each FAO records and return an iterator giving only the
-    data I need for my CDP updates"""
+    """
+    Process each FAO records, determine the CDP species scientific name and
+    return an iterator giving only the data I need for my CDP updates.
+    User need to provide the 'supplied_breed' attribute in order to use
+    the returned dictionary for dadis_link endpoint updates
+
+    Parameters
+    ----------
+    commonnames2species : dict
+        The species dictionary which relates dad-is common name with the CDP
+        scientific name
+
+    Yields
+    ------
+    data : dictionary
+        Data required to update dadis_link endpoint. Please note that the
+        supplied breed need to be provided by the user before updating a
+        record.
+    """
 
     # great. Now process fao data and filter only the species I have
     for record in filter(
@@ -162,9 +211,18 @@ def parse_fao_records(commonnames2species):
 
 
 def process_custom_records():
-    """Search in CDP for custom links to FAO data (supplied breeds that don't
-    match the efabis_breed_name but which we know the correspondance with FAO
-    data)"""
+    """
+    Search in CDP for custom links to FAO data (supplied breeds that don't
+    match the efabis common_name but which we know the correspondance with FAO
+    data). Those record have 'is_custom' attribute set to True. All
+    organism records matching the species, country and supplied_breed will be
+    updated with those DAD-is records.
+
+    Returns
+    -------
+    None.
+
+    """
 
     global SESSION
 
@@ -213,8 +271,17 @@ def process_custom_records():
 
 
 def process_fao_records():
-    """Get data from CDP database and try to find the FAO records needed to
-    update CDP (DAD-IS table and organism link to such table)"""
+    """
+    Process the FAO metadata table, filter out records relying on data
+    stored in CDP and try to annotate organism relying on 'supplied_breed'
+    an FAO columns names ('most_common_name', 'transboundary_name' and
+    'other_names').
+
+    Returns
+    -------
+    None.
+
+    """
 
     global SESSION
 
@@ -296,6 +363,31 @@ def process_fao_records():
 
 
 def update_organism(params, dadis, check_key='most_common_name'):
+    """
+
+
+    Parameters
+    ----------
+    params : dict
+        A dictionary passed to the organism endpoint to filter out organism
+        record, relying on endpoint parameters like'species' and
+        'efabis_breed_country'. Breed name is searched with 'search' key in
+        order to provide a case insensitive search.
+    dadis : dict
+        A dictionary required to update the dadis_link endpoint, as
+        returned by :py:meth:`parse_fao_record`. This function will manage
+        the missing 'supplied_breed' keys relying on matched organism
+    check_key : string, optional
+        The dadis key required the organism 'supplied_breed'. If those values
+        are equal, organism will be updated with the dadis link (if missing).
+        The default is 'most_common_name'.
+
+    Returns
+    -------
+    None.
+
+    """
+
     # need to get all organism by species scientific name, country and
     # supplied breed
     response = SESSION.get(BACKEND_URL + "/organism/", params=params)
