@@ -139,3 +139,10 @@ postgis-data/
 
 # database backup
 *.sql.gz
+
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData

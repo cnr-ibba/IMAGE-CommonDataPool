@@ -62,7 +62,7 @@ services:
 
     # espose a port for testing purpuse
     ports:
-      - "25432:5432"
+      - "35432:5432"
 
 networks:
   nginx_network:

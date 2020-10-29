@@ -1,10 +1,10 @@
-Django==2.2.14
-django-db-views
+Django==2.2.16
+django-db-views==0.0.9
 django-debug-toolbar==2.2
-django-filter
-djangorestframework
-djangorestframework-gis
-gunicorn
+django-filter==2.4.0
+djangorestframework==3.12.1
+djangorestframework-gis==0.16
+gunicorn==20.0.4
 ipython
 pillow
 psycopg2

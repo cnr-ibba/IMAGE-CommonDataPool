@@ -72,9 +72,25 @@ class Species2CommonNameAdmin(admin.ModelAdmin):
 
 class DADISLinkAdmin(admin.ModelAdmin):
     list_display = (
-        'species', 'supplied_breed', 'efabis_breed_country', 'dadis_url'
+        'species', 'supplied_breed', 'country', 'most_common_name',
+        'transboundary_name', 'other_name', 'dadis_url', 'is_custom'
     )
+    list_filter = ['species', 'country']
+    search_fields = [
+        'supplied_breed',
+        'most_common_name',
+        'transboundary_name',
+        'other_name'
+    ]
     list_per_page = 25
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(DADISLinkAdmin, self).get_form(request, obj, **kwargs)
+
+        # since I'm adding a new URL from the admin, I suppose it will be
+        # a custom url
+        form.base_fields['is_custom'].initial = True
+        return form
 
 
 admin.site.register(Organism, OrganismAdmin)

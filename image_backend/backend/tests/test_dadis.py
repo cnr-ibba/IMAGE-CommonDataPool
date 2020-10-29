@@ -34,7 +34,7 @@ class DADISLinkTestCase(APITestCase):
                 "common_name": "Cattle"
             },
             "supplied_breed": "Asturiana de los Valles",
-            "efabis_breed_country": "Spain",
+            "country": "Spain",
             "dadis_url": (
                 "https://dadis-breed-4eff5.firebaseapp.com/?country=Spain"
                 "&specie=Cattle&breed=Asturiana%20de%20los%20Valles"
