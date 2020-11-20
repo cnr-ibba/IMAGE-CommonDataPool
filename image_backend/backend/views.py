@@ -1,6 +1,4 @@
 
-import math
-
 from django.http import HttpResponse
 from django.db.models import Count
 from django.contrib.gis.geos import GEOSGeometry
@@ -53,14 +51,12 @@ def backend_root(request, format=None):
         "organism_short/": "organismindex_short",
         "organism/summary/": "organism_summary",
         "organism/graphical_summary/": "organism_graphical_summary",
-        "organism/gis_search/": "organism_gis_search",
         "organism.geojson/": "geoorganism_list",
         "organism/download/": "organism_download",
         'specimen/': 'specimenindex',
         'specimen_short/': 'specimenindex_short',
         'specimen/summary/': 'specimen_summary',
         'specimen/graphical_summary/': 'specimens_graphical_summary',
-        'specimen/gis_search/': 'specimen_gis_search',
         "specimen.geojson/": "geospecimen_list",
         'specimen/download/': 'specimen_download',
         'file/': 'fileindex',
@@ -191,38 +187,6 @@ def get_organisms_graphical_summary(request, format=None):
         'countries': country_count,
         'coordinates': coordinates
     })
-
-
-def convert_to_radians(degrees):
-    return float(degrees) * 3.14 / 180
-
-
-@api_view(['GET'])
-def organisms_gis_search(request, format=None):
-    filter_results = dict()
-    filter_results['results'] = list()
-    latitude = convert_to_radians(request.GET.get('latitude', False))
-    longitude = convert_to_radians(request.GET.get('longitude', False))
-    radius = float(request.GET.get('radius', False))
-    results = Organism.objects.all()
-    organisms = results.exclude(birth_location_longitude='',
-                                birth_location_latitude='')
-    for organism in organisms:
-        organism_latitude = convert_to_radians(
-            organism.birth_location_latitude)
-        organism_longitude = convert_to_radians(
-            organism.birth_location_longitude)
-        if math.acos(math.sin(latitude) * math.sin(organism_latitude) +
-                     math.cos(latitude) * math.cos(organism_latitude) *
-                     math.cos(organism_longitude - longitude)) * 6371 < radius:
-            organism_results = {
-                'data_source_id': organism.data_source_id,
-                'species': organism.species,
-                'supplied_breed': organism.supplied_breed,
-                'sex': organism.sex
-            }
-            filter_results['results'].append(organism_results)
-    return Response(filter_results)
 
 
 class CustomGeoJsonPagination(GeoJsonPagination):
@@ -365,34 +329,6 @@ def get_specimens_graphical_summary(request, format=None):
         'organism_part': organism_count,
         'coordinates': coordinates
     })
-
-
-@api_view(['GET'])
-def specimens_gis_search(request, format=None):
-    filter_results = dict()
-    filter_results['results'] = list()
-    latitude = convert_to_radians(request.GET.get('latitude', False))
-    longitude = convert_to_radians(request.GET.get('longitude', False))
-    radius = int(request.GET.get('radius', False))
-    results = Specimen.objects.all()
-    specimens = results.exclude(collection_place_latitude='',
-                                collection_place_longitude='')
-    for specimen in specimens:
-        specimen_latitude = convert_to_radians(
-            specimen.collection_place_latitude)
-        specimen_longitude = convert_to_radians(
-            specimen.collection_place_longitude)
-        if math.acos(math.sin(latitude) * math.sin(specimen_latitude) +
-                     math.cos(latitude) * math.cos(specimen_latitude) *
-                     math.cos(specimen_longitude - longitude)) * 6371 < radius:
-            specimen_results = {
-                'data_source_id': specimen.data_source_id,
-                'species': specimen.species,
-                'derived_from': specimen.derived_from,
-                'organism_part': specimen.organism_part
-            }
-            filter_results['results'].append(specimen_results)
-    return Response(filter_results)
 
 
 class GeoSpecimenViewSet(GeoMaterialMixin, viewsets.ReadOnlyModelViewSet):

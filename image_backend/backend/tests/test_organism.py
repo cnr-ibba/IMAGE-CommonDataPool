@@ -91,26 +91,6 @@ class OrganismTestCase(CommonMixin, APITestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['data_source_id'], "SAMEA7044752")
 
-
-class GISSearchTestCase(CommonMixin, APITestCase):
-    def test_search(self):
-        url = api_reverse("backend:organism_gis_search")
-        response = self.client.get(
-            url,
-            {'latitude': 51,
-             'longitude': 10,
-             'radius': 1})
-        results = response.data["results"]
-        self.assertEqual(len(results), 1)
-        test = results[0]
-        reference = {
-            "data_source_id": "SAMEA7044752",
-            "species": "Gallus gallus",
-            "supplied_breed": "chicken",
-            "sex": "female"
-        }
-        self.assertDictEqual(reference, test)
-
     def test_summary(self):
         url = api_reverse("backend:organism_graphical_summary")
         response = self.client.get(url)

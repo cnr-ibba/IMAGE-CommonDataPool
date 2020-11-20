@@ -55,8 +55,6 @@ urlpatterns = [
          name='organism_summary'),
     path('organism/graphical_summary/', views.get_organisms_graphical_summary,
          name='organism_graphical_summary'),
-    path('organism/gis_search/', views.organisms_gis_search,
-         name='organism_gis_search'),
 
     path('organism.geojson/', geoorganism_list, name='geoorganism_list'),
     path('organism.geojson/<str:data_source_id>/',
@@ -75,8 +73,6 @@ urlpatterns = [
          name='specimen_summary'),
     path('specimen/graphical_summary/', views.get_specimens_graphical_summary,
          name='specimens_graphical_summary'),
-    path('specimen/gis_search/', views.specimens_gis_search,
-         name='specimen_gis_search'),
 
     path('specimen.geojson/', geospecimen_list, name='geospecimen_list'),
     path('specimen.geojson/<str:data_source_id>/',
