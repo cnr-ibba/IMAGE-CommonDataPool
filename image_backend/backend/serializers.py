@@ -179,6 +179,7 @@ class DADISLinkSerializer(serializers.HyperlinkedModelSerializer):
             'species',
             'supplied_breed',
             'country',
+            'iso3',
             'most_common_name',
             'transboundary_name',
             'other_name',
