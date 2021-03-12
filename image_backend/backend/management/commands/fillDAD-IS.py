@@ -59,6 +59,7 @@ class Command(BaseCommand):
                 species=species,
                 supplied_breed=row.supplied_breed,
                 country=row.country,
+                iso3=row.iso3,
                 most_common_name=row.most_common_name,
                 transboundary_name=row.transboundary_name,
                 other_name=other_name,
