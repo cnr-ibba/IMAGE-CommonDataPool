@@ -72,7 +72,7 @@ def get_species2commonname():
 
 
 # a function to get back fao metadata
-def get_fao_metadata(filename="20201015_Report_Export_Data.csv"):
+def get_fao_metadata(filename="Report_Export_Data.csv"):
     """
     Read the downloaded FAO table, sanitize column name and returns an
     iterator of collections.namedtuple where attributes are table column
@@ -203,6 +203,7 @@ def parse_fao_records(commonnames2species):
             'species': species,
             'most_common_name': record.most_common_name,
             'country': record.country,
+            'iso3': record.iso3,
             'transboundary_name': record.transboundary_name,
             'other_name': other_name
         }

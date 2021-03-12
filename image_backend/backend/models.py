@@ -145,7 +145,10 @@ class DADISLink(models.Model):
         on_delete=models.CASCADE)
 
     supplied_breed = models.CharField(max_length=255)
+
+    # dadis now track country data with iso3 code
     country = models.CharField(max_length=255)
+    iso3 = models.CharField(max_length=3)
 
     # those records track the efabis fields
     most_common_name = models.CharField(
@@ -207,9 +210,9 @@ class DADISLink(models.Model):
         if self.dadis_url is None or self.dadis_url == '':
             self.dadis_url = (
                 "https://fao-dadis-breed-detail.firebaseapp.com/?country="
-                "{country}&specie={specie}&breed={breed}"
+                "{iso3}&specie={specie}&breed={breed}"
             ).format(
-                country=urlquote(self.country),
+                iso3=urlquote(self.iso3),
                 specie=urlquote(self.species.common_name),
                 breed=urlquote(self.most_common_name)
             )

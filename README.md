@@ -19,7 +19,13 @@ $ docker-compose run --rm djangoapp python manage.py migrate
 $ docker-compose run --rm djangoapp python manage.py collectstatic
 ```
 
-Populate DAD-IS table with custom links
+Fix permissions:
+
+```
+$ docker-compose run --rm djangoapp chgrp -R www-data .
+```
+
+Populate DAD-IS table with custom links:
 
 ```
 $ docker-compose run --rm djangoapp python manage.py fillDAD-IS

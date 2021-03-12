@@ -35,8 +35,9 @@ class DADISLinkTestCase(APITestCase):
             },
             "supplied_breed": "Asturiana de los Valles",
             "country": "Spain",
+            "iso3": "ESP",
             "dadis_url": (
-                "https://dadis-breed-4eff5.firebaseapp.com/?country=Spain"
+                "https://dadis-breed-4eff5.firebaseapp.com/?country=ESP"
                 "&specie=Cattle&breed=Asturiana%20de%20los%20Valles"
                 "&callback=allbreeds")
         }
