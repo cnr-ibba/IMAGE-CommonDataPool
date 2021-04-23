@@ -53,6 +53,12 @@ class BioSampleAbstract(models.Model):
     organization_uri = ArrayField(models.TextField(blank=True), blank=True)
     publication_doi = models.CharField(max_length=1000, blank=True)
 
+    # for cross references
+    external_references = ArrayField(
+        models.URLField(max_length=1000),
+        blank=True,
+        default=list)
+
     class Meta:
         abstract = True
 

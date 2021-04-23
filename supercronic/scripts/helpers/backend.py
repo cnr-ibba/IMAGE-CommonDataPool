@@ -442,7 +442,7 @@ class CDPConverter():
             'update',  # HINT: need this field for update (not etag!!!)
             'updateDate',
             'taxId',
-
+            'externalReferences',
         ])
 
     def check_biosample_attr(self, sample):
@@ -483,6 +483,17 @@ class CDPConverter():
         # custom attributes
         record['data_source_id'] = sample['accession']
         record['etag'] = etag
+
+        # track externalReferences attribute
+        # [{
+        #     'url': 'https://www.ebi.ac.uk/ena/data/view/ERS5331193',
+        #     'duo': []}
+        # ]
+        if 'externalReferences' in sample:
+            tmp = list()
+            for item in sample['externalReferences']:
+                tmp.append(item['url'])
+            record['external_references'] = tmp
 
         if record['material'] == 'organism':
             # update record with organism rules
