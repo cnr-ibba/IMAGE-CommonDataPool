@@ -427,6 +427,37 @@ class CDPConverter():
         self.organism_rules = organism_rules
         self.specimen_rules = specimen_rules
 
+        # defining managed keys
+        self.managed = set(['accession', 'characteristics', 'relationships'])
+        self.ignored = set([
+            '_links',
+            'certificates',
+            'submittedVia',
+            'domain',
+            # currently all this keys are ignored
+            'name',  # this is my IMAGEID
+            'create',
+            'release',
+            'releaseDate',
+            'update',  # HINT: need this field for update (not etag!!!)
+            'updateDate',
+            'taxId',
+
+        ])
+
+    def check_biosample_attr(self, sample):
+        """Test biosample attributes for unmanaged keys
+
+        Parameters
+        ----------
+        sample : dict
+            A BioSamples record.
+        """
+
+        for key, value in sample.items():
+            if key not in self.managed.union(self.ignored):
+                logger.warning(f"Unmanaged key '{key}': {value}")
+
     def convert_record(self, sample, etag):
         """
         Convert a BioSample record into a CDP record
@@ -443,6 +474,8 @@ class CDPConverter():
         record : dict
             a CDP record.
         """
+
+        self.check_biosample_attr(sample)
 
         # covert agains standard rules
         record = parse_biosample(sample, self.standard_rules)
