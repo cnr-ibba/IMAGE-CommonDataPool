@@ -1,12 +1,12 @@
 
 #
-# VERSION 0.1
-# DOCKER-VERSION  19.03.11
+# VERSION 0.2
+# DOCKER-VERSION  20.10.14
 # AUTHOR:         Paolo Cozzi <paolo.cozzi@ibba.cnr.it>
 # DESCRIPTION:    A postgis derived image
 # TO_BUILD:       docker build --rm -t image-commondatapool_djangoapp .
 # TO_RUN:         docker run -d -P image-commondatapool_djangoapp
-# TO_TAG:         docker tag image-commondatapool_djangoapp:latest image-commondatapool_djangoapp:0.1
+# TO_TAG:         docker tag image-commondatapool_djangoapp:latest image-commondatapool_djangoapp:0.2
 #
 
 # FROM <image>[:<tag>|@<digest]
@@ -26,10 +26,15 @@ RUN apt-get update && apt-get install -y gnupg2 && \
   wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
   echo "deb http://apt.postgresql.org/pub/repos/apt/ buster-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list
 
+# add PostgreSQL repository
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+    gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main" | \
+    tee /etc/apt/sources.list.d/postgresql.list
+
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
-    postgresql-client-12 \
     binutils \
     libproj-dev \
     gdal-bin && \
