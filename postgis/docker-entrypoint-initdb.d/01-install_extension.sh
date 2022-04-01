@@ -1,14 +1,23 @@
-#!/bin/bash
+#!/bin/sh
+
 set -e
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-  -- Create a GIS database template
-  CREATE DATABASE template_postgis WITH owner = postgres ENCODING = 'UTF8' CONNECTION LIMIT = -1;
-  UPDATE pg_database SET datistemplate = TRUE WHERE datname = 'template_postgis' ;
+# Perform all actions as $POSTGRES_USER
+export PGUSER="$POSTGRES_USER"
+
+# Create the 'template_postgis' template db
+"${psql[@]}" <<- 'EOSQL'
+CREATE DATABASE template_postgis IS_TEMPLATE true;
 EOSQL
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" template_postgis <<-EOSQL
-  -- Install GIS extension
-  CREATE EXTENSION postgis;
-  CREATE EXTENSION postgis_raster;
+# Load PostGIS into both template_database and $POSTGRES_DB
+for DB in template_postgis "$POSTGRES_DB"; do
+	echo "Loading PostGIS extensions into $DB"
+	"${psql[@]}" --dbname="$DB" <<-'EOSQL'
+		CREATE EXTENSION IF NOT EXISTS postgis;
+		CREATE EXTENSION IF NOT EXISTS postgis_topology;
+		CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+		CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
+    CREATE EXTENSION IF NOT EXISTS postgis_raster;
 EOSQL
+done
