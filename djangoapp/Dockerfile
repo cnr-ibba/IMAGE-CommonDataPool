@@ -45,8 +45,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir /code
 WORKDIR /code
 
-COPY ./requirements.txt /code
-RUN pip install -r requirements.txt
+COPY ./requirements.txt /root/
+RUN pip install -r /root/requirements.txt
 
 EXPOSE 8000
 CMD ["gunicorn", "--bind", ":8000", "--access-logfile", "-", "--workers", "2", "api_service.wsgi:application"]
