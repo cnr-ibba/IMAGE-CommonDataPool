@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'django_filters',
     'django_db_views',
-    'backend',
+    'backend.apps.BackendConfig',
 ]
 
 MIDDLEWARE = [

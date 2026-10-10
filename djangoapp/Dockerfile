@@ -13,7 +13,7 @@
 FROM python:3.8
 
 # The mainteiner of this image
-LABEL maintainer="Paolo Cozzi <paolo.cozzi@ibba.cnr.it"
+LABEL maintainer="Paolo Cozzi <paolo.cozzi@ibba.cnr.it>"
 
 # synchronize timezone for container
 # https://forums.docker.com/t/synchronize-timezone-from-host-to-container/39116
@@ -22,14 +22,12 @@ RUN dpkg-reconfigure -f noninteractive tzdata
 
 # install postgres 12 client libraries on debian
 # https://computingforgeeks.com/install-postgresql-12-on-debian/
-RUN apt-get update && apt-get install -y gnupg2 && \
-  wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
-  echo "deb http://apt.postgresql.org/pub/repos/apt/ buster-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list
+RUN apt-get update && apt-get install -y gnupg2
 
-# add PostgreSQL repository
+# add PostgreSQL repository (python:3.8 is now based on debian bookworm)
 RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
     gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg
-RUN echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main" | \
+RUN echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" | \
     tee /etc/apt/sources.list.d/postgresql.list
 
 # Install dependencies

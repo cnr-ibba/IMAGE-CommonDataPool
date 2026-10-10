@@ -20,6 +20,11 @@ LABEL maintainer="paolo.cozzi@ibba.cnr.it"
 RUN echo "Europe/Rome" > /etc/timezone
 RUN dpkg-reconfigure -f noninteractive tzdata
 
+# bullseye is EOL: both debian and pgdg repositories were moved to archives
+RUN sed -i 's|apt.postgresql.org|apt-archive.postgresql.org|' /etc/apt/sources.list.d/pgdg.list && \
+    sed -i -e 's|deb.debian.org/debian-security|archive.debian.org/debian-security|' \
+    -e 's|deb.debian.org/debian|archive.debian.org/debian|' /etc/apt/sources.list
+
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip && \
